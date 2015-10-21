@@ -5,13 +5,17 @@ int main(int argc, char* argv[]) {
     GC_INIT();
     printf("%s %s\n", PROGRAM_NAME, PROGRAM_VERSION);
 
-    if(argc != 2) {
+    if(argc < 2 || argc == 3 || argc > 4) {
         printf(PROGRAM_USAGE, argv[0]);
         return EXITCODE_INVALID_ARGUMENTS;
     }
 
+    if(argc == 4) {
+        log_setLogLevel(argv[3]);
+    }
+
     char* mainFile = getMainFilePath(argv[1]);
-    Component mainComponent = component_constructor(mainFile);
+    Component mainComponent = component_constructor(mainFile, NULL, 0);
 
     pthread_t mainThread;
     pthread_create(&mainThread, NULL, component_run, mainComponent);

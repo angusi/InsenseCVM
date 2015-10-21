@@ -5,14 +5,17 @@
 #include <string.h>
 #include <stdio.h>
 #include "include/gc/gc.h"
+#include "Logger.h"
 
 struct Component_s {
     char* name;
+    FILE *sourceFile;
 };
 
 typedef struct Component_s* Component;
 
-Component component_constructor(char* sourceFile);
+Component component_constructor(char* sourceFile, char* params[], int paramCount);
 void* component_run(void* this);
+char* component_getName(Component this);
 
 #endif //CVM_COMPONENT_H

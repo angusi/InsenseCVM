@@ -1,0 +1,8 @@
+/bin/
+.idea/
+.gradle/
+build/
+out/
+*.iml
+Thumbs.db
+._.*

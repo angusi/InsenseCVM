@@ -9,6 +9,6 @@ static const char PATH_SEPARATOR = '/';
 
 static const char* PROGRAM_NAME = "Insense C Virtual Machine";
 static const char* PROGRAM_VERSION = "0.0.1";
-static const char* PROGRAM_USAGE = "Usage: %s <program directory>\n";
+static const char* PROGRAM_USAGE = "Usage: %s <program directory> [-l (DEBUG|INFO|WARNING|ERROR|FATAL)]\n";
 
 #endif //CVM_STRINGS_H
