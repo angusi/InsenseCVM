@@ -9,9 +9,9 @@
  * @return Pointer to new component object
  */
 Component component_constructor(char* sourceFile, char* params[], int paramCount) {
-    Component this = GC_MALLOC(sizeof(struct Component_s));
+    Component this = GC_alloc(sizeof(struct Component_s), true);
     size_t componentNameSize = strrchr(basename(sourceFile), '.')-basename(sourceFile);
-    this->name = GC_MALLOC_ATOMIC(componentNameSize);
+    this->name = GC_alloc(componentNameSize, false);
     strncpy(this->name, basename(sourceFile), componentNameSize);
 
     //TODO: Check file exists
@@ -50,7 +50,7 @@ void* component_run(void* component) {
 }
 
 char* component_getName(Component this) {
-    char* name = GC_MALLOC_ATOMIC(strlen(this->name)+1);
+    char* name = GC_alloc(strlen(this->name)+1, false);
     strncpy(name, this->name, strlen(this->name));
     name[strlen(this->name)] = '\0';
     return name;

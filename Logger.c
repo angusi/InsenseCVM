@@ -23,13 +23,13 @@ char* getLevelString(log_Level_t level) {
     }
 }
 
-void log_logMessage(log_Level_t level, char *source, char *message) {
+void log_logMessage(log_Level_t level, const char *source, const char *message) {
     if(level >= logged_level) {
         printf("%s %s: %s\n", getLevelString(level), source, message);
     }
 }
 
-void log_setLogLevel(char* level) {
+void log_setLogLevel(const char* level) {
     //Each comparison is negated, since strcmp returns 0 (boolean FALSE) for match!
     if(!strcmp(level,"DEBUG")) {
         logged_level = DEBUG;

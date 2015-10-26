@@ -2,7 +2,8 @@
 
 
 int main(int argc, char* argv[]) {
-    GC_INIT();
+    GC_init();
+
     printf("%s %s\n", PROGRAM_NAME, PROGRAM_VERSION);
 
     if(argc < 2 || argc == 3 || argc > 4) {
@@ -30,7 +31,7 @@ char* getMainFilePath(char* directory) {
         //Make room for the extra slash we need to add
         bufferSize += 1;
     }
-    char* mainFile = GC_MALLOC_ATOMIC(bufferSize);
+    char* mainFile = GC_alloc(bufferSize, false);
     strcat(mainFile, directory);
     if(directory[strlen(directory) - 1] != PATH_SEPARATOR) {
         mainFile[strlen(directory)] = PATH_SEPARATOR;

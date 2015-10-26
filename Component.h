@@ -4,7 +4,7 @@
 #include <libgen.h>
 #include <string.h>
 #include <stdio.h>
-#include "include/gc/gc.h"
+#include "GC/GC_mem.h"
 #include "Logger.h"
 
 struct Component_s {

@@ -7,7 +7,6 @@
 #include "Component.h"
 #include "Strings.h"
 #include "ExitCodes.h"
-#include "include/gc/gc.h"
 
 int main(int argc, char* argv[]);
 char* getMainFilePath(char* directory);
