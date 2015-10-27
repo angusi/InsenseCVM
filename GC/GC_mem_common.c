@@ -49,7 +49,7 @@ void GC_init() {
  * @param[in] mem_contains_pointers If this memory will contain pointers, set to true.
  */
 void* GC_alloc(size_t size, bool mem_contains_pointers){
-    log_logMessage(DEBUG, GARBAGE_COLLECTOR_NAME, "Allocating memory");
+    log_logMessage(DEBUG, GARBAGE_COLLECTOR_NAME, "Allocating %zu bytes memory", size);
 	//Allocate memory (required memory + GC overhead)
 	void* new_memory = malloc(size + sizeof(GC_Header_s));
 

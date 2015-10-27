@@ -1,6 +1,11 @@
 /*
  * Memory management function declarations
  *
+ * Copyright (c) 2015, Angus Ireland
+ * School of Computer Science, St. Andrews University
+ *
+ * A simplified version of memory management function declarations from the Insense Runtime for Unix.
+ *
  *
  * Copyright (c) 2013, Jonathan Lewis, Alan Dearle, Pavlo Bazilinskyy <pavlo.bazilinskyy@gmail.com>
  * School of Computer Science, St. Andrews University
@@ -51,14 +56,13 @@ typedef struct GC_Container {
 } GC_Container_s, *GC_Container_PNTR;
 
 extern void GC_init();
-extern void GC_assign(void *generic_var_pntr, void *new_mem);
+//extern void GC_assign(void *generic_var_pntr, void *new_mem);
 extern void* GC_alloc(size_t size, bool contains_pointers);
-extern unsigned GC_getRef(void* pntr);
-extern bool GC_mem_contains_pointers(void* pntr);
-extern void GC_mem_set_contains_pointers(void* pntr, bool mem_contains_pointers);
+//extern unsigned GC_getRef(void* pntr);
+//extern bool GC_mem_contains_pointers(void* pntr);
+//extern void GC_mem_set_contains_pointers(void* pntr, bool mem_contains_pointers);
 extern void GC_decRef(void* pntr);
 extern void GC_incRef(void* pntr);
-extern void GC_modRef_by_n(void* pntr, int n);
 extern void GC_free(void* pntr);
 
-#endif /*DAL_MEM_H_*/
+#endif /*GC_MEM_H_*/

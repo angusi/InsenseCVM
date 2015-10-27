@@ -1,7 +1,7 @@
 /*
- * Component operation declarations.
+ * Variable Scope stack definitions
  *
- * Components may be instantiated and run from this code.
+ * Functions here manage scoping within various components
  *
  * Copyright (c) 2015, Angus Ireland
  * School of Computer Science, St. Andrews University
@@ -25,29 +25,24 @@
  * THE SOFTWARE.
  */
 
-#ifndef CVM_COMPONENT_H
-#define CVM_COMPONENT_H
+#ifndef CVM_SCOPESTACK_H
+#define CVM_SCOPESTACK_H
 
-#include <libgen.h>
-#include <string.h>
-#include <stdio.h>
-#include "GC/GC_mem.h"
-#include "Logger.h"
-#include "ScopeStack.h"
+#include <stdbool.h>
 
-typedef struct Component {
-    char* name;
-    FILE *sourceFile;
-    pthread_t* threadId;
-    ScopeLevel_PNTR scopeStackBottom;
-} Component_s, *Component;
+typedef struct ScopeEntry {
+    struct ScopeEntry* nextEntry;
+    const char* name;
+    void* value;
+    bool GC_item;
+} ScopeEntry_s, *ScopeEntry_PNTR;
 
-Component component_constructor(char* sourceFile, char* params[], int paramCount);
-void* component_run(void* this);
-char* component_getName(Component this);
-void component_enterScope(Component this);
-void component_exitScope(Component this);
-char* component_readString(Component this);
-Component component_call(Component this);
+typedef struct ScopeLevel {
+    struct ScopeLevel* parentScope;
+    ScopeEntry_PNTR firstEntry;
+} ScopeLevel_s, *ScopeLevel_PNTR;
 
-#endif //CVM_COMPONENT_H
+ScopeLevel_PNTR scopeStack_enterScope(ScopeLevel_PNTR parentScope);
+ScopeLevel_PNTR scopeStack_exitScope(ScopeLevel_PNTR currentScope);
+
+#endif //CVM_SCOPESTACK_H
