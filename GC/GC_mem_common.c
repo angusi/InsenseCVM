@@ -49,7 +49,9 @@ void GC_init() {
  * @param[in] mem_contains_pointers If this memory will contain pointers, set to true.
  */
 void* GC_alloc(size_t size, bool mem_contains_pointers){
+#ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, GARBAGE_COLLECTOR_NAME, "Allocating %zu bytes memory", size);
+#endif
 	//Allocate memory (required memory + GC overhead)
 	void* new_memory = malloc(size + sizeof(GC_Header_s));
 
@@ -82,7 +84,9 @@ void GC_decRef(void* pntr) {
 		return;
 	}
 
+#ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, GARBAGE_COLLECTOR_NAME, "Decrementing reference count");
+#endif
 	GC_Header_PNTR header = (GC_Header_PNTR) (pntr - sizeof(GC_Header_s));
 	pthread_mutex_lock(header->mutex);
 	header->ref_count -= 1;
@@ -94,7 +98,9 @@ void GC_decRef(void* pntr) {
             //This is done by casting to a GC_Container_PNTR and calling the first field, the decRef method.
 			GC_Container_PNTR thisMem = (GC_Container_PNTR) pntr;
 			thisMem->decRef(pntr);
+#ifdef DEBUGGINGENABLED
 			log_logMessage(DEBUG, GARBAGE_COLLECTOR_NAME, "Decrementing contained pointers");
+#endif
 		}
 		GC_free(pntr);
 	}
@@ -110,7 +116,9 @@ void GC_incRef(void *pntr) {
         return;
     }
 
+#ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, GARBAGE_COLLECTOR_NAME, "Incrementing reference count");
+#endif
     GC_Header_PNTR header = (GC_Header_PNTR) (pntr - sizeof(GC_Header_s));
     pthread_mutex_lock(header->mutex);
     header->ref_count += 1;
@@ -133,6 +141,8 @@ void GC_free(void *pntr){
 		return;
 	}
 
+#ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, GARBAGE_COLLECTOR_NAME, "Freeing memory");
+#endif
 	free(header);
 }

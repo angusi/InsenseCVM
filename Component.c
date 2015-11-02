@@ -39,7 +39,7 @@
 Component component_constructor(char* sourceFile, char* params[], int paramCount) {
     Component this = GC_alloc(sizeof(Component_s), true);
     size_t componentNameSize = strrchr(basename(sourceFile), '.')-basename(sourceFile);
-    this->name = GC_alloc(componentNameSize, false);
+    this->name = GC_alloc(componentNameSize+1, false);
     strncpy(this->name, basename(sourceFile), componentNameSize);
     this->scopeStackBottom = GC_alloc(sizeof(ScopeLevel_PNTR), false);
     this->scopeStackBottom = NULL;
@@ -87,17 +87,23 @@ void* component_run(void* component) {
 
 
 void component_enterScope(Component this) {
+#ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, this->name, "ENTERSCOPE");
+#endif
     this->scopeStackBottom = scopeStack_enterScope(this->scopeStackBottom);
 }
 
 void component_exitScope(Component this) {
+#ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, this->name, "EXITSCOPE");
+#endif
     this->scopeStackBottom = scopeStack_exitScope(this->scopeStackBottom);
 }
 
 Component component_call(Component this) {
+#ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, this->name, "CALL");
+#endif
     int nextByte;
     if((nextByte = fgetc(this->sourceFile)) != BYTECODE_TYPE_STRING) {
         log_logMessage(FATAL, this->name, "Syntax error in CALL - %d", nextByte);
@@ -106,7 +112,9 @@ Component component_call(Component this) {
     } else {
         char* name = component_readString(this);
         int number_of_parameters = fgetc(this->sourceFile);
+#ifdef DEBUGGINGENABLED
         log_logMessage(DEBUG, this->name, name);
+#endif
 
         //TODO: Parameters for Components
 
@@ -144,10 +152,12 @@ char* component_getName(Component this) {
 char* component_readString(Component this) {
     int numChars = 0;
 
+    //Get length
     while(fgetc(this->sourceFile) != '\0') {
         numChars++;
     }
-    fseek(this->sourceFile, numChars*-1, SEEK_CUR);
+    //Rewind(+1 for \0)
+    fseek(this->sourceFile, (numChars*-1)-1, SEEK_CUR);
 
     char* string = GC_alloc((size_t) (numChars+1), false);
     int nextByte;

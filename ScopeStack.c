@@ -32,7 +32,9 @@
 #include "Logger.h"
 
 ScopeLevel_PNTR scopeStack_enterScope(ScopeLevel_PNTR parentScope) {
+#ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, "Scope Stack", "Entering Scope");
+#endif
     ScopeLevel_PNTR newLevel = malloc(sizeof(ScopeLevel_s));
     newLevel->firstEntry = NULL;
     newLevel->parentScope = parentScope;
@@ -41,7 +43,9 @@ ScopeLevel_PNTR scopeStack_enterScope(ScopeLevel_PNTR parentScope) {
 }
 
 ScopeLevel_PNTR scopeStack_exitScope(ScopeLevel_PNTR currentScope) {
+#ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, "Scope Stack", "Exiting Scope");
+#endif
     if(currentScope->firstEntry != NULL) {
         ScopeEntry_PNTR* currentItem = malloc(sizeof(__intptr_t));
         ScopeEntry_PNTR* nextItem = malloc(sizeof(__intptr_t));

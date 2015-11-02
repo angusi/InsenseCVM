@@ -34,9 +34,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <pthread.h>
-#include "Component.h"
-#include "Strings.h"
-#include "ExitCodes.h"
 
 int main(int argc, char* argv[]);
 char* getFilePath(char* fileName);

@@ -30,6 +30,9 @@
 
 #include "Main.h"
 
+#include "Component.h"
+#include "Strings.h"
+
 char* directory;
 
 int main(int argc, char* argv[]) {
