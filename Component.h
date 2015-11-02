@@ -33,13 +33,13 @@
 #include <stdio.h>
 #include "GC/GC_mem.h"
 #include "Logger.h"
-#include "ScopeStack.h"
+#include "Stack.h"
 
 typedef struct Component {
     char* name;
     FILE *sourceFile;
     pthread_t* threadId;
-    ScopeLevel_PNTR scopeStackBottom;
+    //TODO: Stack
 } Component_s, *Component;
 
 Component component_constructor(char* sourceFile, char* params[], int paramCount);

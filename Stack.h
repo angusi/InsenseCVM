@@ -1,7 +1,7 @@
 /*
- * Language Strings.
+ * Variable Scope stack definitions
  *
- * Constant strings used in the Garbage Collector for the Insense Virtual Machine.
+ * Functions here manage scoping within various components
  *
  * Copyright (c) 2015, Angus Ireland
  * School of Computer Science, St. Andrews University
@@ -25,16 +25,15 @@
  * THE SOFTWARE.
  */
 
-#ifndef GC_STRINGS_H
-#define GC_STRINGS_H
+#ifndef CMV_STACK_H
+#define CMV_STACK_H
 
-static const char* GARBAGE_COLLECTOR_NAME = "Garbage Collector";
-static const char* GARBAGE_COLLECTOR_OOM = "Could not allocate memory (possibly OOM?)";
-static const char* GARBAGE_COLLECTOR_DECREF_NULL = "Ignoring call to decrement NULL pointer references";
+#include <stdbool.h>
+#include "IteratedList/IteratedList.h"
 
-#ifdef DEBUGGINGENABLED
-static const char* GARBAGE_COLLECTOR_ALLOCATING_BYTES = "Allocating %zu bytes memory";
-static const char* GARBAGE_COLLECTOR_ASSIGN = "Assigning memory at %p to pointer %p.";
-#endif
+void stack_constructor();
+void stack_push(); //TODO: Element parameter?
+void stack_pop();  //TODO: Return type?
+void stack_peek(); //TODO: Return type?
 
-#endif //GC_STRINGS_H
+#endif //CMV_STACK_H

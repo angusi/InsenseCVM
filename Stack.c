@@ -27,10 +27,12 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "ScopeStack.h"
+#include "Stack.h"
 #include "GC/GC_mem.h"
 #include "Logger.h"
 
+//TODO: Stack functions from header
+/*
 ScopeLevel_PNTR scopeStack_enterScope(ScopeLevel_PNTR parentScope) {
 #ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, "Scope Stack", "Entering Scope");
@@ -47,8 +49,8 @@ ScopeLevel_PNTR scopeStack_exitScope(ScopeLevel_PNTR currentScope) {
     log_logMessage(DEBUG, "Scope Stack", "Exiting Scope");
 #endif
     if(currentScope->firstEntry != NULL) {
-        ScopeEntry_PNTR* currentItem = malloc(sizeof(__intptr_t));
-        ScopeEntry_PNTR* nextItem = malloc(sizeof(__intptr_t));
+        StackEntry_PNTR * currentItem = malloc(sizeof(__intptr_t));
+        StackEntry_PNTR * nextItem = malloc(sizeof(__intptr_t));
         memcpy(nextItem, &(currentScope->firstEntry), sizeof(__intptr_t));
         while((*currentItem)->nextEntry != NULL) {
             currentItem = memcpy(currentItem, nextItem, sizeof(__intptr_t));
@@ -66,3 +68,4 @@ ScopeLevel_PNTR scopeStack_exitScope(ScopeLevel_PNTR currentScope) {
     free(currentScope);
     return parentScope;
 }
+ */

@@ -41,6 +41,33 @@ void GC_init() {
     pthread_mutex_init(GC_mutex, NULL);
 }
 
+void GC_assign(void *generic_var_pntr, void *new_mem) {
+
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, GARBAGE_COLLECTOR_NAME, GARBAGE_COLLECTOR_ASSIGN, new_mem, generic_var_pntr);
+#endif
+
+    void **var_pntr = (void **) generic_var_pntr;
+    void *old_mem = *var_pntr; // can deref void** but not void*
+
+    if(old_mem == new_mem) {
+        // If old memory address is same as the new one don't do anything
+        return;
+    }
+
+    if(old_mem != NULL) {
+        // If old memory is not null update ref_count and free if 0
+        GC_decRef(old_mem);
+    }
+    if(new_mem != NULL) {
+        // if new memory is not null
+        GC_incRef(new_mem);
+    }
+
+    // complete the assignment of memory address to caller's variable
+    *var_pntr = new_mem; // as var_pntr has type void** can dereference it here
+}
+
 /**
  * Allocate space in memory for a new, garbage collected object.
  * The memory is automatically zero'd.
@@ -50,13 +77,13 @@ void GC_init() {
  */
 void* GC_alloc(size_t size, bool mem_contains_pointers){
 #ifdef DEBUGGINGENABLED
-    log_logMessage(DEBUG, GARBAGE_COLLECTOR_NAME, "Allocating %zu bytes memory", size);
+    log_logMessage(DEBUG, GARBAGE_COLLECTOR_NAME, GARBAGE_COLLECTOR_ALLOCATING_BYTES, size);
 #endif
 	//Allocate memory (required memory + GC overhead)
 	void* new_memory = malloc(size + sizeof(GC_Header_s));
 
     if(new_memory == NULL) {
-        log_logMessage(ERROR, GARBAGE_COLLECTOR_NAME, "Could not allocate memory (possibly OOM?)");
+        log_logMessage(ERROR, GARBAGE_COLLECTOR_NAME, GARBAGE_COLLECTOR_OOM);
         return NULL;
     }
 
@@ -80,7 +107,7 @@ void* GC_alloc(size_t size, bool mem_contains_pointers){
 void GC_decRef(void* pntr) {
 
 	if(pntr==NULL){
-        log_logMessage(WARNING, GARBAGE_COLLECTOR_NAME, "Ignoring call to decrement NULL pointer references");
+        log_logMessage(WARNING, GARBAGE_COLLECTOR_NAME, GARBAGE_COLLECTOR_DECREF_NULL);
 		return;
 	}
 

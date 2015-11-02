@@ -1,7 +1,6 @@
 /*
- * Variable Scope stack definitions
+ * Iterated List Strings
  *
- * Functions here manage scoping within various components
  *
  * Copyright (c) 2015, Angus Ireland
  * School of Computer Science, St. Andrews University
@@ -23,26 +22,20 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
- */
+ */#ifndef CVM_STRINGS_H
+#define CVM_STRINGS_H
 
-#ifndef CVM_SCOPESTACK_H
-#define CVM_SCOPESTACK_H
+static const char* ITERATED_LIST_NAME = "Iterated List";
+static const char*ITERATED_LIST_CONSTRUCT_LIST_FAILED = "Could not construct new Iterated List";
+static const char* ITERATED_LIST_CONSTRUCT_NODE_FAILED = "Could not construct new Iterated List Node";
+static const char* ITERATED_LIST_NULL_POINTER = "List pointer is null";
+static const char* ITERATED_LIST_NULL_ELEMENT = "List element is null";
+static const char* ITERATED_LIST_INDEX_OUT_OF_BOUNDS = "List index out of bounds";
+static const char* ITERATED_LIST_ELEMENT_NOT_FOUND = "Element not found";
 
-#include <stdbool.h>
+#ifdef DEBUGGINGENABLED
+static const char* ITERATED_LIST_DECREF = "decRef";
+static const char* ITERATED_LIST_FREEING_NODE = "Freeing node at %p";
+#endif
 
-typedef struct ScopeEntry {
-    struct ScopeEntry* nextEntry;
-    const char* name;
-    void* value;
-    bool GC_item;
-} ScopeEntry_s, *ScopeEntry_PNTR;
-
-typedef struct ScopeLevel {
-    struct ScopeLevel* parentScope;
-    ScopeEntry_PNTR firstEntry;
-} ScopeLevel_s, *ScopeLevel_PNTR;
-
-ScopeLevel_PNTR scopeStack_enterScope(ScopeLevel_PNTR parentScope);
-ScopeLevel_PNTR scopeStack_exitScope(ScopeLevel_PNTR currentScope);
-
-#endif //CVM_SCOPESTACK_H
+#endif //CVM_STRINGS_H

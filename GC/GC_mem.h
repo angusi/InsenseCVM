@@ -56,7 +56,7 @@ typedef struct GC_Container {
 } GC_Container_s, *GC_Container_PNTR;
 
 extern void GC_init();
-//extern void GC_assign(void *generic_var_pntr, void *new_mem);
+extern void GC_assign(void *generic_var_pntr, void *new_mem);
 extern void* GC_alloc(size_t size, bool contains_pointers);
 //extern unsigned GC_getRef(void* pntr);
 //extern bool GC_mem_contains_pointers(void* pntr);
