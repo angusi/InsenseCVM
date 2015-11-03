@@ -1,7 +1,7 @@
 
 #include "IteratedList.h"      // for linked list
 #include "Strings.h"           // for Language management
-#include "../Logger.h"         // for logging
+#include "../Logger/Logger.h"         // for logging
 
 
 unsigned IteratedList_getListLength(IteratedList_PNTR l){

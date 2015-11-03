@@ -27,12 +27,12 @@
 #include "IteratedList.h"      // for linked list
 #include "Strings.h"           // Language management
 #include "../GC/GC_mem.h"      // for memory management
-#include "../Logger.h"         // for logging
+#include "../Logger/Logger.h"         // for logging
 
 // "private" (static in C-sense) function declarations, not included in header.
 
 // for garbage collection
-static void List_decRef(IteratedList_PNTR pntr);
+static void IteratedList_decRef(IteratedList_PNTR pntr);
 
 // End of "private" function declarations
 
@@ -44,7 +44,7 @@ IteratedList_PNTR IteratedList_constructList(){
         log_logMessage(ERROR, ITERATED_LIST_NAME, ITERATED_LIST_CONSTRUCT_LIST_FAILED);
         return 0;
     }
-    this->decRef = List_decRef;
+    this->decRef = IteratedList_decRef;
     return(this);
 }
 
@@ -52,34 +52,15 @@ IteratedList_PNTR IteratedList_constructList(){
 // "private" (static in C-sense) functions, not included in header.
 
 
-// decRef function is called when ref count to a IteratedList object is zero
-// before freeing memory for IteratedList object
-static void List_decRef(IteratedList_PNTR pntr){
+// decRef function is called when ref count to a Collections object is zero
+// before freeing memory for Collections object
+static void IteratedList_decRef(IteratedList_PNTR pntr){
 #ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, ITERATED_LIST_NAME, ITERATED_LIST_DECREF);
 #endif
     if(!IteratedList_isEmpty(pntr)) {
-        IteratedList_removeAllElements(pntr); // forces decRef on IteratedList content (node payload)
+        IteratedList_removeAllElements(pntr); // forces decRef on Collections content (node payload)
     }
 }
 
 // End of "private" functions
-
-
-
-
-// Explicit free for IteratedList node structures .
-// As IteratedList nodes cannot be shared among different lists at present, memory
-// for nodes is maintained manually and not garbage collected.
-// In contrast, memory for IteratedList payload is garbage collected, may have same
-// item in many lists ... so IteratedList_freeNode calls GC_decRef on these objects
-
-void IteratedList_freeNode(IteratedListNode_PNTR node){
-#ifdef DEBUGGINGENABLED
-    log_logMessage(DEBUG, ITERATED_LIST_NAME, ITERATED_LIST_FREEING_NODE, node);
-#endif
-    // force ref count decrement on object being kept in node payload
-    GC_decRef(node->payload);
-    free(node);
-}
-

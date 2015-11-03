@@ -1,7 +1,6 @@
 /*
- * Variable Scope stack definitions
+ * Iterated List Strings
  *
- * Functions here manage scoping within various components
  *
  * Copyright (c) 2015, Angus Ireland
  * School of Computer Science, St. Andrews University
@@ -23,17 +22,21 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
- */
+ */#ifndef CVM_STRINGS_H
+#define CVM_STRINGS_H
 
-#ifndef CMV_STACK_H
-#define CMV_STACK_H
+static const char* ITERATED_LIST_NAME = "Iterated List";
+static const char*ITERATED_LIST_CONSTRUCT_LIST_FAILED = "Could not construct new Iterated List";
+static const char* ITERATED_LIST_CONSTRUCT_NODE_FAILED = "Could not construct new Iterated List Node";
+static const char* ITERATED_LIST_NULL_POINTER = "List pointer is null";
+static const char* ITERATED_LIST_NULL_ELEMENT = "List element is null";
+static const char* ITERATED_LIST_INDEX_OUT_OF_BOUNDS = "List index out of bounds";
+static const char* ITERATED_LIST_ELEMENT_NOT_FOUND = "Element not found";
 
-#include <stdbool.h>
-#include "IteratedList/IteratedList.h"
+#ifdef DEBUGGINGENABLED
+static const char* ITERATED_LIST_DECREF = "decRef List";
+static const char* ITERATED_LIST_NODE_DECREF = "decRef Node";
+static const char* ITERATED_LIST_FREEING_NODE = "Freeing node at %p";
+#endif
 
-void stack_constructor();
-void stack_push(); //TODO: Element parameter?
-void stack_pop();  //TODO: Return type?
-void stack_peek(); //TODO: Return type?
-
-#endif //CMV_STACK_H
+#endif //CVM_STRINGS_H

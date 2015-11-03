@@ -33,7 +33,10 @@ static const char* GARBAGE_COLLECTOR_OOM = "Could not allocate memory (possibly 
 static const char* GARBAGE_COLLECTOR_DECREF_NULL = "Ignoring call to decrement NULL pointer references";
 
 #ifdef DEBUGGINGENABLED
-static const char* GARBAGE_COLLECTOR_ALLOCATING_BYTES = "Allocating %zu bytes memory";
+static const char* GARBAGE_COLLECTOR_ALLOCATING_BYTES = "Allocating %zu bytes memory at pointer %p";
+static const char* GARBAGE_COLLECTOR_INCREFING = "Incrementing reference count to %p (currently %d)";
+static const char* GARBAGE_COLLECTOR_DECREFING = "Decrementing reference count to %p (currently %d)";
+static const char* GARBAGE_COLLECTOR_FREEING_BYTES = "Freeing memory at pointer %p.";
 static const char* GARBAGE_COLLECTOR_ASSIGN = "Assigning memory at %p to pointer %p.";
 #endif
 

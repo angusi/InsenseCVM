@@ -1,9 +1,10 @@
 
 #include "IteratedList.h"      // for linked list
 #include "Strings.h"           // for Language management
-#include "../Logger.h"         // for logging
+#include "../Logger/Logger.h"         // for logging
+#include "../GC/GC_mem.h"
 
-// removes all elements from a IteratedList l
+// removes all elements from a Collections l
 // by assigning null to each node payload the ref count for 
 // the payload is decremented
 
@@ -19,7 +20,7 @@ void IteratedList_removeAllElements(IteratedList_PNTR l){
     while( current != NULL){
         previous = current;
         current = current->tail;
-        IteratedList_freeNode(previous); // free memory used by IteratedList node
+        GC_decRef(previous); // free memory used by Collections node
     }
     l->first = l->next = NULL;
 }

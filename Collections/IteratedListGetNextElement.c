@@ -1,6 +1,6 @@
 #include "IteratedList.h"      // for linked list
 #include "Strings.h"           // for Language management
-#include "../Logger.h"         // for logging
+#include "../Logger/Logger.h"         // for logging
 
 
 void *IteratedList_getNextElement(IteratedList_PNTR l) {
@@ -16,7 +16,7 @@ void *IteratedList_getNextElement(IteratedList_PNTR l) {
     void *element = l->next->payload;
     l->next = l->next->tail;
     if (l->next == NULL) {
-        // if we iterated to the end of the IteratedList
+        // if we iterated to the end of the Collections
         l->next = l->first; // wrap round to the beginning
     }
     return (element);

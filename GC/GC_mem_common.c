@@ -30,7 +30,7 @@
 
 
 #include "GC_mem.h"
-#include "../Logger.h"
+#include "../Logger/Logger.h"
 #include "Strings.h"
 
 // mutex to serialise memory operation when using a shared heap
@@ -43,12 +43,12 @@ void GC_init() {
 
 void GC_assign(void *generic_var_pntr, void *new_mem) {
 
-#ifdef DEBUGGINGENABLED
-    log_logMessage(DEBUG, GARBAGE_COLLECTOR_NAME, GARBAGE_COLLECTOR_ASSIGN, new_mem, generic_var_pntr);
-#endif
-
     void **var_pntr = (void **) generic_var_pntr;
     void *old_mem = *var_pntr; // can deref void** but not void*
+
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, GARBAGE_COLLECTOR_NAME, GARBAGE_COLLECTOR_ASSIGN, new_mem, old_mem);
+#endif
 
     if(old_mem == new_mem) {
         // If old memory address is same as the new one don't do anything
@@ -76,9 +76,6 @@ void GC_assign(void *generic_var_pntr, void *new_mem) {
  * @param[in] mem_contains_pointers If this memory will contain pointers, set to true.
  */
 void* GC_alloc(size_t size, bool mem_contains_pointers){
-#ifdef DEBUGGINGENABLED
-    log_logMessage(DEBUG, GARBAGE_COLLECTOR_NAME, GARBAGE_COLLECTOR_ALLOCATING_BYTES, size);
-#endif
 	//Allocate memory (required memory + GC overhead)
 	void* new_memory = malloc(size + sizeof(GC_Header_s));
 
@@ -87,10 +84,14 @@ void* GC_alloc(size_t size, bool mem_contains_pointers){
         return NULL;
     }
 
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, GARBAGE_COLLECTOR_NAME, GARBAGE_COLLECTOR_ALLOCATING_BYTES, size, new_memory);
+#endif
+
 	// zero memory area to avoid having to set all pointer types to NULL
 	memset(new_memory, 0, (size + sizeof(GC_Header_s)));
 	GC_Header_PNTR header = ((GC_Header_PNTR) new_memory);
-	header->ref_count = 0;
+	header->ref_count = 1;
 	header->mem_contains_pointers = mem_contains_pointers;
 	header->mutex = GC_mutex;
 
@@ -111,12 +112,13 @@ void GC_decRef(void* pntr) {
 		return;
 	}
 
+    GC_Header_PNTR header = (GC_Header_PNTR) (pntr - sizeof(GC_Header_s));
 #ifdef DEBUGGINGENABLED
-    log_logMessage(DEBUG, GARBAGE_COLLECTOR_NAME, "Decrementing reference count");
+    log_logMessage(DEBUG, GARBAGE_COLLECTOR_NAME, GARBAGE_COLLECTOR_DECREFING, header, header->ref_count);
 #endif
-	GC_Header_PNTR header = (GC_Header_PNTR) (pntr - sizeof(GC_Header_s));
 	pthread_mutex_lock(header->mutex);
 	header->ref_count -= 1;
+    pthread_mutex_unlock(header->mutex);
 
     // If the memory is now not pointed to by anything, free it.
 	if(header->ref_count <= 0) {
@@ -131,7 +133,7 @@ void GC_decRef(void* pntr) {
 		}
 		GC_free(pntr);
 	}
-    pthread_mutex_unlock(header->mutex);
+
 }
 
 /*
@@ -143,10 +145,10 @@ void GC_incRef(void *pntr) {
         return;
     }
 
-#ifdef DEBUGGINGENABLED
-    log_logMessage(DEBUG, GARBAGE_COLLECTOR_NAME, "Incrementing reference count");
-#endif
     GC_Header_PNTR header = (GC_Header_PNTR) (pntr - sizeof(GC_Header_s));
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, GARBAGE_COLLECTOR_NAME, GARBAGE_COLLECTOR_INCREFING, header, header->ref_count);
+#endif
     pthread_mutex_lock(header->mutex);
     header->ref_count += 1;
     pthread_mutex_unlock(header->mutex);
@@ -169,7 +171,12 @@ void GC_free(void *pntr){
 	}
 
 #ifdef DEBUGGINGENABLED
-    log_logMessage(DEBUG, GARBAGE_COLLECTOR_NAME, "Freeing memory");
+    log_logMessage(DEBUG, GARBAGE_COLLECTOR_NAME, GARBAGE_COLLECTOR_FREEING_BYTES, header);
 #endif
 	free(header);
+}
+
+bool GC_mem_contains_pointers(void *pntr) {
+    GC_Header_PNTR header = (GC_Header_PNTR) (pntr - sizeof(GC_Header_s));
+    return header->mem_contains_pointers;
 }

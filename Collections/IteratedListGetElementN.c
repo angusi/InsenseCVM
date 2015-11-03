@@ -1,10 +1,10 @@
 
 #include "IteratedList.h"      // for linked list
 #include "Strings.h"           // for Language management
-#include "../Logger.h"         // for logging
+#include "../Logger/Logger.h"         // for logging
 
 /**
- * Get hold of nth element from the IteratedList
+ * Get hold of nth element from the Collections
  *
  * Elements are indexed from 0 to N-1
 */

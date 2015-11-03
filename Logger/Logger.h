@@ -1,6 +1,7 @@
 /*
- * Iterated List Strings
+ * Logger definitions.
  *
+ * Methods here are used for managing logging output.
  *
  * Copyright (c) 2015, Angus Ireland
  * School of Computer Science, St. Andrews University
@@ -22,20 +23,19 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
- */#ifndef CVM_STRINGS_H
-#define CVM_STRINGS_H
+ */
 
-static const char* ITERATED_LIST_NAME = "Iterated List";
-static const char*ITERATED_LIST_CONSTRUCT_LIST_FAILED = "Could not construct new Iterated List";
-static const char* ITERATED_LIST_CONSTRUCT_NODE_FAILED = "Could not construct new Iterated List Node";
-static const char* ITERATED_LIST_NULL_POINTER = "List pointer is null";
-static const char* ITERATED_LIST_NULL_ELEMENT = "List element is null";
-static const char* ITERATED_LIST_INDEX_OUT_OF_BOUNDS = "List index out of bounds";
-static const char* ITERATED_LIST_ELEMENT_NOT_FOUND = "Element not found";
+#ifndef CVM_LOGGER_H
+#define CVM_LOGGER_H
 
-#ifdef DEBUGGINGENABLED
-static const char* ITERATED_LIST_DECREF = "decRef";
-static const char* ITERATED_LIST_FREEING_NODE = "Freeing node at %p";
-#endif
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "../ExitCodes.h"
 
-#endif //CVM_STRINGS_H
+typedef enum { DEBUG, INFO, WARNING, ERROR, FATAL } log_Level_t;
+
+void log_init();
+void log_logMessage(log_Level_t level, const char* source, const char* message, ...);
+void log_setLogLevel(const char* level);
+#endif //CVM_LOGGER_H

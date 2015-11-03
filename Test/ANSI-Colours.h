@@ -1,7 +1,7 @@
 /*
- * Component operation declarations.
+ * 
  *
- * Components may be instantiated and run from this code.
+ * 
  *
  * Copyright (c) 2015, Angus Ireland
  * School of Computer Science, St. Andrews University
@@ -24,30 +24,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+#ifndef CVM_ANSI_COLOURS_H
+#define CVM_ANSI_COLOURS_H
 
-#ifndef CVM_COMPONENT_H
-#define CVM_COMPONENT_H
+#define ANSI_COLOR_RED     "\x1b[31m"
+#define ANSI_COLOR_GREEN   "\x1b[32m"
+#define ANSI_COLOR_YELLOW  "\x1b[33m"
+#define ANSI_COLOR_BLUE    "\x1b[34m"
+#define ANSI_COLOR_MAGENTA "\x1b[35m"
+#define ANSI_COLOR_CYAN    "\x1b[36m"
+#define ANSI_COLOR_RESET   "\x1b[0m"
 
-#include <libgen.h>
-#include <string.h>
-#include <stdio.h>
-#include "GC/GC_mem.h"
-#include "Logger/Logger.h"
-#include "Collections/Stack.h"
-
-typedef struct Component {
-    char* name;
-    FILE *sourceFile;
-    pthread_t* threadId;
-    //TODO: Stack
-} Component_s, *Component;
-
-Component component_constructor(char* sourceFile, char* params[], int paramCount);
-void* component_run(void* this);
-char* component_getName(Component this);
-void component_enterScope(Component this);
-void component_exitScope(Component this);
-char* component_readString(Component this);
-Component component_call(Component this);
-
-#endif //CVM_COMPONENT_H
+#endif //CVM_ANSI_COLOURS_H

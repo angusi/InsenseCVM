@@ -41,8 +41,6 @@ Component component_constructor(char* sourceFile, char* params[], int paramCount
     size_t componentNameSize = strrchr(basename(sourceFile), '.')-basename(sourceFile);
     this->name = GC_alloc(componentNameSize+1, false);
     strncpy(this->name, basename(sourceFile), componentNameSize);
-    this->scopeStackBottom = GC_alloc(sizeof(ScopeLevel_PNTR), false);
-    this->scopeStackBottom = NULL;
 
     //TODO: Check file exists
     this->sourceFile = fopen(sourceFile, "rb");
@@ -90,14 +88,13 @@ void component_enterScope(Component this) {
 #ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, this->name, "ENTERSCOPE");
 #endif
-    this->scopeStackBottom = scopeStack_enterScope(this->scopeStackBottom);
+
 }
 
 void component_exitScope(Component this) {
 #ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, this->name, "EXITSCOPE");
 #endif
-    this->scopeStackBottom = scopeStack_exitScope(this->scopeStackBottom);
 }
 
 Component component_call(Component this) {

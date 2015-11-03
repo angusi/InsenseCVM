@@ -1,7 +1,7 @@
 /*
- * Logger definitions.
+ * Variable Scope stack definitions
  *
- * Methods here are used for managing logging output.
+ * Functions here manage scoping within various components
  *
  * Copyright (c) 2015, Angus Ireland
  * School of Computer Science, St. Andrews University
@@ -25,17 +25,23 @@
  * THE SOFTWARE.
  */
 
-#ifndef CVM_LOGGER_H
-#define CVM_LOGGER_H
+#ifndef CMV_STACK_H
+#define CMV_STACK_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include "ExitCodes.h"
+#include <stdbool.h>
+#include "IteratedList.h"
 
-typedef enum { DEBUG, INFO, WARNING, ERROR, FATAL } log_Level_t;
+typedef struct Stack Stack_s, *Stack_PNTR;
+struct Stack {
+    void (*decRef)(Stack_PNTR pntr);
+    IteratedList_PNTR storage;
+    unsigned int stackTop;
+};
 
-void log_init();
-void log_logMessage(log_Level_t level, const char* source, const char* message, ...);
-void log_setLogLevel(const char* level);
-#endif //CVM_LOGGER_H
+Stack_PNTR Stack_constructor();
+void Stack_push(Stack_PNTR this, void* item);
+void* Stack_pop(Stack_PNTR this);
+void* Stack_peek(Stack_PNTR this);
+void Stack_clear(Stack_PNTR this);
+
+#endif //CMV_STACK_H

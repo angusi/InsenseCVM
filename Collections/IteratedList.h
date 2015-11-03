@@ -16,6 +16,7 @@
 
 typedef struct IteratedListNode IteratedListNode_s, *IteratedListNode_PNTR;
 struct IteratedListNode {
+    void (*decRef)(IteratedListNode_PNTR pntr);
     void *payload;
     IteratedListNode_PNTR tail;
 };
@@ -23,14 +24,14 @@ struct IteratedListNode {
 typedef struct IteratedList IteratedList_s, *IteratedList_PNTR;
 struct IteratedList {
     void (*decRef)(IteratedList_PNTR pntr);
-    IteratedListNode_PNTR first;   // the first node in the IteratedList, NULL if IteratedList is empty
+    IteratedListNode_PNTR first;   // the first node in the Collections, NULL if Collections is empty
     IteratedListNode_PNTR next;    // used for iterating over lists using IteratedList_getNextElement
 };
 
 // constructor
 extern IteratedList_PNTR IteratedList_constructList();
 
-// functions to insert into, get and remove elements from a IteratedList
+// functions to insert into, get and remove elements from a Collections
 extern void IteratedList_insertElement(IteratedList_PNTR l, void *element);
 
 extern void *IteratedList_getNextElement(IteratedList_PNTR l);
@@ -44,7 +45,5 @@ extern void *IteratedList_searchList(IteratedList_PNTR l, int (*f)(void *element
 
 extern void IteratedList_removeElement(IteratedList_PNTR l, void *element);
 extern void IteratedList_removeAllElements(IteratedList_PNTR l);
-
-extern void IteratedList_freeNode(IteratedListNode_PNTR node);
 
 #endif
