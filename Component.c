@@ -71,7 +71,7 @@ void* component_run(void* component) {
                 component_call(this);
                 break;
             default:
-                log_logMessage(WARNING, this->name, "Unknown Byte Read");
+                log_logMessage(WARNING, this->name, "Unknown Byte Read - %u", nextByte);
                 break;
         }
     }
@@ -88,13 +88,14 @@ void component_enterScope(Component this) {
 #ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, this->name, "ENTERSCOPE");
 #endif
-
+    this->scopeStack = ScopeStack_enterScope(this->scopeStack);
 }
 
 void component_exitScope(Component this) {
 #ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, this->name, "EXITSCOPE");
 #endif
+    ScopeStack_exitScope(this->scopeStack);
 }
 
 Component component_call(Component this) {

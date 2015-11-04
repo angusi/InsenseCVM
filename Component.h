@@ -34,12 +34,13 @@
 #include "GC/GC_mem.h"
 #include "Logger/Logger.h"
 #include "Collections/Stack.h"
+#include "VariableStorage/ScopeStack.h"
 
 typedef struct Component {
     char* name;
     FILE *sourceFile;
     pthread_t* threadId;
-    //TODO: Stack
+    ScopeStack_PNTR scopeStack;
 } Component_s, *Component;
 
 Component component_constructor(char* sourceFile, char* params[], int paramCount);
