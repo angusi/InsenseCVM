@@ -43,8 +43,12 @@ Component component_constructor(char* sourceFile, char* params[], int paramCount
     this->name = GC_alloc(componentNameSize+1, false);
     strncpy(this->name, basename(sourceFile), componentNameSize);
 
-    //TODO: Check file exists
     this->sourceFile = fopen(sourceFile, "rb");
+    if(this->sourceFile == NULL) {
+        log_logMessage(FATAL, this->name, "Component Source file does not exist!");
+        //Todo: Exit thread cleanly:
+        pthread_exit(NULL);
+    }
 
     this->dataStack = Stack_constructor();
 
