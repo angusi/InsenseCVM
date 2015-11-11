@@ -71,7 +71,7 @@ bool testPushItemOntoStack() {
     int* someInteger = GC_alloc(sizeof(int), false);
     *someInteger = 42;
 
-    Stack_push(stack, someInteger);
+    Stack_push(stack, someInteger, sizeof(int));
 
     if(stack->stackTop != 1) {
         printf(ANSI_COLOR_RED "Test failed - STACK PUSH" ANSI_COLOR_RESET "\n");
@@ -98,7 +98,7 @@ bool testPushItemsOntoStack() {
     int* someOtherInteger = GC_alloc(sizeof(int), false);
     *someOtherInteger = 43;
 
-    Stack_push(stack, someInteger);
+    Stack_push(stack, someInteger, sizeof(int));
 
     if(stack->stackTop != 1) {
         result = false;
@@ -106,7 +106,7 @@ bool testPushItemsOntoStack() {
         result = true;
     }
 
-    Stack_push(stack, someOtherInteger);
+    Stack_push(stack, someOtherInteger, sizeof(int));
 
     if(stack->stackTop != 2) {
 
@@ -134,7 +134,7 @@ bool testPopItemFromStack() {
     int* someInteger = GC_alloc(sizeof(int), false);
     *someInteger = 42;
 
-    Stack_push(stack, someInteger);
+    Stack_push(stack, someInteger, sizeof(int));
     int* retrievedInteger = Stack_pop(stack);
 
     if(stack->stackTop != 0 || *retrievedInteger != 42) {
@@ -163,8 +163,8 @@ bool testPopItemsFromStack() {
     int* someOtherInteger = GC_alloc(sizeof(int), false);
     *someOtherInteger = 43;
 
-    Stack_push(stack, someInteger);
-    Stack_push(stack, someOtherInteger);
+    Stack_push(stack, someInteger, sizeof(int));
+    Stack_push(stack, someOtherInteger, sizeof(int));
 
     int* retrievedOtherInteger = Stack_pop(stack);
 
@@ -206,7 +206,7 @@ bool testPeekAtStack() {
     int* someInteger = GC_alloc(sizeof(int), false);
     *someInteger = 42;
 
-    Stack_push(stack, someInteger);
+    Stack_push(stack, someInteger, sizeof(int));
     int* retrievedInteger = Stack_peek(stack);
 
     if(stack->stackTop != 1 || *retrievedInteger != 42) {

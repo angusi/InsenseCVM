@@ -36,25 +36,30 @@
 #include "Collections/Stack.h"
 #include "ScopeStack/ScopeStack.h"
 
-typedef struct Component {
+typedef struct Component Component_s, *Component_PNTR;
+struct Component {
+    void (*decRef)(Component_PNTR component);
     char* name;
     FILE* sourceFile;
     pthread_t threadId;
     ScopeStack_PNTR scopeStack;
     Stack_PNTR dataStack;
-} Component_s, *Component;
+    Stack_PNTR waitComponents;
+};
 
-Component component_constructor(char* sourceFile, char* params[], int paramCount);
+Component_PNTR component_constructor(char* sourceFile, char* params[], int paramCount);
 void* component_run(void* this);
-char* component_getName(Component this);
+char* component_getName(Component_PNTR this);
 
 //TODO: Should these be declared at head of C file instead of in H file?
-void component_enterScope(Component this);
-void component_exitScope(Component this);
-char* component_readString(Component this);
-Component component_call(Component this);
-void component_declare(Component this);
-void component_store(Component this);
-void component_component(Component this);
+void component_enterScope(Component_PNTR this);
+void component_exitScope(Component_PNTR this);
+char* component_readString(Component_PNTR this);
+void* component_readNBytes(Component_PNTR this, size_t nBytes);
+Component_PNTR component_call(Component_PNTR this);
+void component_declare(Component_PNTR this);
+void component_store(Component_PNTR this);
+void component_component(Component_PNTR this);
+void component_push(Component_PNTR this);
 
 #endif //CVM_COMPONENT_H

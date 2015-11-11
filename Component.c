@@ -28,7 +28,8 @@
 #include "Component.h"
 #include "BytecodeTable.h"
 #include "Main.h"
-#include "ScopeStack/ScopeStack.h"
+
+static void Component_decRef(Component_PNTR pntr);
 
 /**
  * Construct a new component object
@@ -37,8 +38,10 @@
  * @param[in] paramCount Number of parameters
  * @return Pointer to new component object
  */
-Component component_constructor(char* sourceFile, char* params[], int paramCount) {
-    Component this = GC_alloc(sizeof(Component_s), true);
+Component_PNTR component_constructor(char* sourceFile, char* params[], int paramCount) {
+    Component_PNTR this = GC_alloc(sizeof(Component_s), true);
+    this->decRef = Component_decRef;
+
     size_t componentNameSize = strrchr(basename(sourceFile), '.')-basename(sourceFile);
     this->name = GC_alloc(componentNameSize+1, false);
     strncpy(this->name, basename(sourceFile), componentNameSize);
@@ -62,7 +65,7 @@ Component component_constructor(char* sourceFile, char* params[], int paramCount
  * @param[in,out] component Component instance to run.
  */
 void* component_run(void* component) {
-    Component this = (Component)component;
+    Component_PNTR this = (Component_PNTR)component;
     log_logMessage(INFO, this->name, "Start");
 
     int nextByte;
@@ -86,6 +89,9 @@ void* component_run(void* component) {
             case BYTECODE_STORE:
                 component_store(this);
                 break;
+            case BYTECODE_PUSH:
+                component_push(this);
+                break;
             default:
                 log_logMessage(ERROR, this->name, "Unknown Byte Read - %u", nextByte);
                 break;
@@ -94,27 +100,36 @@ void* component_run(void* component) {
 
     log_logMessage(INFO, this->name, "End");
 
+    if(this->waitComponents != NULL) {
+        log_logMessage(INFO, this->name, "Waiting on started components.");
+        while(Stack_peek(this->waitComponents) != NULL) {
+            Component_PNTR waitOn = Stack_pop(this->waitComponents);
+            log_logMessage(INFO, this->name, "  Waiting on %lu", waitOn->threadId);
+            pthread_join(waitOn->threadId, NULL);
+        }
+        log_logMessage(INFO, this->name, "All started components stopped.");
+    }
 
     return NULL;
 }
 
 
 
-void component_enterScope(Component this) {
+void component_enterScope(Component_PNTR this) {
 #ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, this->name, "ENTERSCOPE");
 #endif
     this->scopeStack = ScopeStack_enterScope(this->scopeStack);
 }
 
-void component_exitScope(Component this) {
+void component_exitScope(Component_PNTR this) {
 #ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, this->name, "EXITSCOPE");
 #endif
     ScopeStack_exitScope(this->scopeStack);
 }
 
-void component_component(Component this) {
+void component_component(Component_PNTR this) {
 #ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, this->name, "COMPONENT");
 #endif
@@ -140,7 +155,7 @@ void component_component(Component this) {
     }
 }
 
-Component component_call(Component this) {
+Component_PNTR component_call(Component_PNTR this) {
 #ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, this->name, "CALL");
 #endif
@@ -165,13 +180,20 @@ Component component_call(Component this) {
         strcat(sourceFile, "Insense_");
         strcat(sourceFile, name);
         strcat(sourceFile, ".isc");
-        sourceFile[sourceFileNameLength] = '\0';
+        sourceFile[sourceFileNameLength-1] = '\0';
         char* filePath = getFilePath(sourceFile);
-        Component newComponent = component_constructor(filePath, NULL, number_of_parameters);
+        Component_PNTR newComponent = component_constructor(filePath, NULL, number_of_parameters);
         pthread_create(&newThread, NULL, component_run, newComponent);
         newComponent->threadId = newThread;
 
-        Stack_push(this->dataStack, newComponent);
+        log_logMessage(INFO, this->name, "    Component %s is at address %p", name, newComponent);
+
+        Stack_push(this->dataStack, newComponent, sizeof(Component_s));
+
+        if(this->waitComponents == NULL) {
+            this->waitComponents = Stack_constructor();
+        }
+        Stack_push(this->waitComponents, newComponent, sizeof(Component_s));
 
         GC_decRef(sourceFile);
         GC_decRef(filePath);
@@ -181,7 +203,7 @@ Component component_call(Component this) {
     }
 }
 
-void component_declare(Component this) {
+void component_declare(Component_PNTR this) {
 #ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, this->name, "DECLARE");
 #endif
@@ -201,7 +223,7 @@ void component_declare(Component this) {
     }
 }
 
-void component_store(Component this) {
+void component_store(Component_PNTR this) {
 #ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, this->name, "STORE");
 #endif
@@ -221,14 +243,47 @@ void component_store(Component this) {
     }
 }
 
-char* component_getName(Component this) {
+void component_push(Component_PNTR this) {
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, this->name, "PUSH");
+#endif
+
+    int type = fgetc(this->sourceFile);
+    char* string; //In case we have a string
+    switch(type) {
+        case BYTECODE_TYPE_INTEGER:
+            Stack_push(this->dataStack, component_readNBytes(this, 4), 4);
+            break;
+        case BYTECODE_TYPE_UNSIGNED_INTEGER:
+            Stack_push(this->dataStack, component_readNBytes(this, 4), 4);
+            break;
+        case BYTECODE_TYPE_REAL:
+            Stack_push(this->dataStack, component_readNBytes(this, 8), 8);
+            break;
+        case BYTECODE_TYPE_BOOL:
+        case BYTECODE_TYPE_BYTE:
+            Stack_push(this->dataStack, component_readNBytes(this, 1), 1);
+            break;
+        case BYTECODE_TYPE_STRING:
+            string = component_readString(this);
+            Stack_push(this->dataStack, string, strlen(string)+1);
+            break;
+        default:
+            log_logMessage(ERROR, this->name, "Unrecognised type - %d", type);
+    }
+}
+
+
+//------
+
+char* component_getName(Component_PNTR this) {
     char* name = GC_alloc(strlen(this->name)+1, false);
     strncpy(name, this->name, strlen(this->name));
     name[strlen(this->name)] = '\0';
     return name;
 }
 
-char* component_readString(Component this) {
+char* component_readString(Component_PNTR this) {
     int numChars = 0;
 
     //Get length
@@ -248,4 +303,24 @@ char* component_readString(Component this) {
     string[numChars] = '\0';
 
     return string;
+}
+
+void* component_readNBytes(Component_PNTR this, size_t nBytes) {
+    char* result = GC_alloc(nBytes, false);
+    for(unsigned int i = 0; i < nBytes; i++) {
+        int nextChar = fgetc(this->sourceFile);
+        result[i] = (char)nextChar;
+    }
+    return result;
+}
+
+// decRef function is called when ref count to a Stack object is zero
+// before freeing memory for Stack object
+static void Component_decRef(Component_PNTR this) {
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, this->name, "Decrementing reference to component");
+#endif
+    GC_decRef(this->scopeStack);
+    GC_decRef(this->dataStack);
+    GC_decRef(this->name);
 }

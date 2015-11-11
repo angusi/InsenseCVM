@@ -54,7 +54,7 @@ int main(int argc, char* argv[]) {
     strncpy(directory, argv[1], strlen(argv[1]));
 
     char* mainFile = getFilePath("Main.isc");
-    Component mainComponent = component_constructor(mainFile, NULL, 0);
+    Component_PNTR mainComponent = component_constructor(mainFile, NULL, 0);
 
     pthread_t mainThread;
     pthread_create(&mainThread, NULL, component_run, mainComponent);
@@ -78,7 +78,7 @@ char* getFilePath(char* fileName) {
         mainFile[strlen(directory)] = PATH_SEPARATOR;
     }
     strcat(mainFile, fileName);
-    mainFile[bufferSize] = '\0';
+    mainFile[bufferSize-1] = '\0';
 
     return mainFile;
 }

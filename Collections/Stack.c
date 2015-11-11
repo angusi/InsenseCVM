@@ -32,6 +32,7 @@
 #include "../Logger/Logger.h"
 
 static void Stack_decRef(Stack_PNTR pntr);
+static void StackEntry_decRef(StackEntry_PNTR pntr);
 
 Stack_PNTR Stack_constructor(){
 #ifdef DEBUGGINGENABLED
@@ -48,20 +49,32 @@ Stack_PNTR Stack_constructor(){
     return(this);
 }
 
-void Stack_push(Stack_PNTR this, void* item) {
-    IteratedList_insertElement(this->storage, item);
+void Stack_push(Stack_PNTR this, void* item, size_t size) {
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, "Stack", "Pushing %p onto stack at %p", item, this);
+#endif
+
+    StackEntry_PNTR newEntry = GC_alloc(sizeof(StackEntry_s), true);
+    newEntry->decRef = StackEntry_decRef;
+    newEntry->size = size;
+    newEntry->object = item;
+
+    IteratedList_insertElement(this->storage, newEntry);
     this->stackTop++;
 }
 
 void* Stack_pop(Stack_PNTR this) {
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, "Stack", "Popping from stack at %p", this);
+#endif
     if(this->stackTop <= 0) {
         log_logMessage(ERROR, "Stack", "Underflow: Cannot pop from empty stack");
         return NULL;
     }
 
-    void* element = IteratedList_getElementN(this->storage, 0);
-    void* item = GC_alloc(sizeof(void*), GC_mem_contains_pointers(element));
-    GC_assign(&item, element);
+    StackEntry_PNTR element = IteratedList_getElementN(this->storage, 0);
+    void* item = GC_alloc(element->size, false);
+    GC_assign(&item, element->object);
     IteratedList_removeElement(this->storage, element);
     this->stackTop--;
     return item;
@@ -69,19 +82,25 @@ void* Stack_pop(Stack_PNTR this) {
 }
 
 void* Stack_peek(Stack_PNTR this) {
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, "Stack", "Peeking at stack at %p", this);
+#endif
     if(this->stackTop <= 0) {
-        log_logMessage(ERROR, "Stack", "Underflow: Cannot pop from empty stack");
+        log_logMessage(ERROR, "Stack", "Underflow: Cannot peek at empty stack");
         return NULL;
     }
 
-    void* element = IteratedList_getElementN(this->storage, 0);
-    void* item = GC_alloc(sizeof(void*), GC_mem_contains_pointers(element));
+    StackEntry_PNTR element = IteratedList_getElementN(this->storage, 0);
+    void* item = GC_alloc(element->size, false);
     GC_assign(&item, element);
 
     return item;
 }
 
 void Stack_clear(Stack_PNTR this) {
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, "Stack", "Clearing stack at %p", this);
+#endif
     while(this->stackTop > 0) {
         Stack_pop(this);
     }
@@ -91,9 +110,16 @@ void Stack_clear(Stack_PNTR this) {
 // before freeing memory for Stack object
 static void Stack_decRef(Stack_PNTR this){
 #ifdef DEBUGGINGENABLED
-    log_logMessage(DEBUG, "Stack", "Decrementing reference to list");
+    log_logMessage(DEBUG, "Stack", "Decrementing reference to stack");
 #endif
     if(!this->stackTop == 0) {
         Stack_clear(this); // forces decRef on IteratedList content (node payload)
     }
+}
+
+static void StackEntry_decRef(StackEntry_PNTR this) {
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, "Stack", "Decrementing reference to stack entry");
+#endif
+    GC_decRef(this->object);
 }

@@ -38,8 +38,15 @@ struct Stack {
     unsigned int stackTop;
 };
 
+typedef struct StackEntry StackEntry_s, *StackEntry_PNTR;
+struct StackEntry {
+    void (*decRef)(StackEntry_PNTR pntr);
+    size_t size;
+    void* object;
+};
+
 Stack_PNTR Stack_constructor();
-void Stack_push(Stack_PNTR this, void* item);
+void Stack_push(Stack_PNTR this, void* item, size_t size);
 void* Stack_pop(Stack_PNTR this);
 void* Stack_peek(Stack_PNTR this);
 void Stack_clear(Stack_PNTR this);
