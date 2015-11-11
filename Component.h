@@ -59,6 +59,7 @@ void* component_readNBytes(Component_PNTR this, size_t nBytes);
 Component_PNTR component_call(Component_PNTR this);
 void component_declare(Component_PNTR this);
 void component_store(Component_PNTR this);
+void component_load(Component_PNTR this);
 void component_component(Component_PNTR this);
 void component_push(Component_PNTR this);
 

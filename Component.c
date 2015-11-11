@@ -92,6 +92,9 @@ void* component_run(void* component) {
             case BYTECODE_PUSH:
                 component_push(this);
                 break;
+            case BYTECODE_LOAD:
+                component_load(this);
+                break;
             default:
                 log_logMessage(ERROR, this->name, "Unknown Byte Read - %u", nextByte);
                 break;
@@ -104,8 +107,9 @@ void* component_run(void* component) {
         log_logMessage(INFO, this->name, "Waiting on started components.");
         while(Stack_peek(this->waitComponents) != NULL) {
             Component_PNTR waitOn = Stack_pop(this->waitComponents);
-            log_logMessage(INFO, this->name, "  Waiting on %lu", waitOn->threadId);
+            log_logMessage(INFO, this->name, "  Waiting on %s (%lu)", waitOn->name, waitOn->threadId);
             pthread_join(waitOn->threadId, NULL);
+            GC_decRef(waitOn);
         }
         log_logMessage(INFO, this->name, "All started components stopped.");
     }
@@ -188,12 +192,12 @@ Component_PNTR component_call(Component_PNTR this) {
 
         log_logMessage(INFO, this->name, "    Component %s is at address %p", name, newComponent);
 
-        Stack_push(this->dataStack, newComponent, sizeof(Component_s));
+        Stack_push(this->dataStack, newComponent);
 
         if(this->waitComponents == NULL) {
             this->waitComponents = Stack_constructor();
         }
-        Stack_push(this->waitComponents, newComponent, sizeof(Component_s));
+        Stack_push(this->waitComponents, newComponent);
 
         GC_decRef(sourceFile);
         GC_decRef(filePath);
@@ -252,27 +256,47 @@ void component_push(Component_PNTR this) {
     char* string; //In case we have a string
     switch(type) {
         case BYTECODE_TYPE_INTEGER:
-            Stack_push(this->dataStack, component_readNBytes(this, 4), 4);
+            Stack_push(this->dataStack, component_readNBytes(this, 4));
             break;
         case BYTECODE_TYPE_UNSIGNED_INTEGER:
-            Stack_push(this->dataStack, component_readNBytes(this, 4), 4);
+            Stack_push(this->dataStack, component_readNBytes(this, 4));
             break;
         case BYTECODE_TYPE_REAL:
-            Stack_push(this->dataStack, component_readNBytes(this, 8), 8);
+            Stack_push(this->dataStack, component_readNBytes(this, 8));
             break;
         case BYTECODE_TYPE_BOOL:
         case BYTECODE_TYPE_BYTE:
-            Stack_push(this->dataStack, component_readNBytes(this, 1), 1);
+            Stack_push(this->dataStack, component_readNBytes(this, 1));
             break;
         case BYTECODE_TYPE_STRING:
             string = component_readString(this);
-            Stack_push(this->dataStack, string, strlen(string)+1);
+            Stack_push(this->dataStack, string);
             break;
         default:
             log_logMessage(ERROR, this->name, "Unrecognised type - %d", type);
     }
 }
 
+
+void component_load(Component_PNTR this) {
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, this->name, "LOAD");
+#endif
+
+    int nextByte;
+    if((nextByte = fgetc(this->sourceFile)) != BYTECODE_TYPE_STRING) {
+        log_logMessage(FATAL, this->name, "Syntax error in LOAD - %d", nextByte);
+        //TODO: Exit thread cleanly:
+        pthread_exit(NULL);
+    } else {
+        char *name = component_readString(this);
+#ifdef DEBUGGINGENABLED
+        log_logMessage(DEBUG, this->name, "   Loading %s", name);
+#endif
+
+        Stack_push(this->dataStack, ScopeStack_load(this->scopeStack, name));
+    }
+}
 
 //------
 

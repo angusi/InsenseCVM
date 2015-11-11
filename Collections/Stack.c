@@ -49,14 +49,13 @@ Stack_PNTR Stack_constructor(){
     return(this);
 }
 
-void Stack_push(Stack_PNTR this, void* item, size_t size) {
+void Stack_push(Stack_PNTR this, void* item) {
 #ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, "Stack", "Pushing %p onto stack at %p", item, this);
 #endif
 
     StackEntry_PNTR newEntry = GC_alloc(sizeof(StackEntry_s), true);
     newEntry->decRef = StackEntry_decRef;
-    newEntry->size = size;
     newEntry->object = item;
 
     IteratedList_insertElement(this->storage, newEntry);
@@ -73,11 +72,10 @@ void* Stack_pop(Stack_PNTR this) {
     }
 
     StackEntry_PNTR element = IteratedList_getElementN(this->storage, 0);
-    void* item = GC_alloc(element->size, false);
-    GC_assign(&item, element->object);
+    GC_incRef(element->object);
     IteratedList_removeElement(this->storage, element);
     this->stackTop--;
-    return item;
+    return element->object;
 
 }
 
@@ -91,10 +89,9 @@ void* Stack_peek(Stack_PNTR this) {
     }
 
     StackEntry_PNTR element = IteratedList_getElementN(this->storage, 0);
-    void* item = GC_alloc(element->size, false);
-    GC_assign(&item, element);
+    GC_incRef(element->object);
 
-    return item;
+    return element->object;
 }
 
 void Stack_clear(Stack_PNTR this) {

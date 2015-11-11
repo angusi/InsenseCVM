@@ -55,7 +55,7 @@ void ScopeStack_declare(ScopeStack_PNTR this, char *name, int type) {
     return HashList_declare(this, name, type);
 }
 
-void *ScopeStack_load(ScopeStack_PNTR this, char *name) {
+void* ScopeStack_load(ScopeStack_PNTR this, char *name) {
     return HashList_get(this, name);
 }
 
