@@ -1,7 +1,6 @@
 /*
- * Component operation declarations.
- *
- * Components may be instantiated and run from this code.
+ * Scope Stacks manage variable scoping.
+ * Scope levels are created to store variables, and when they are destroyed those variables are also destroyed.
  *
  * Copyright (c) 2015, Angus Ireland
  * School of Computer Science, St. Andrews University
@@ -25,36 +24,20 @@
  * THE SOFTWARE.
  */
 
-#ifndef CVM_COMPONENT_H
-#define CVM_COMPONENT_H
+#ifndef CVM_SCOPESTACK_H
+#define CVM_SCOPESTACK_H
 
-#include <libgen.h>
-#include <string.h>
-#include <stdio.h>
-#include "GC/GC_mem.h"
-#include "Logger/Logger.h"
-#include "Collections/Stack.h"
-#include "ScopeStack/ScopeStack.h"
+#include "../Collections/Stack.h"
+#include "../Collections/HashList.h"
 
-typedef struct Component {
-    char* name;
-    FILE* sourceFile;
-    pthread_t threadId;
-    ScopeStack_PNTR scopeStack;
-    Stack_PNTR dataStack;
-} Component_s, *Component;
+typedef IteratedList_PNTR ScopeStack_PNTR, ScopeLevel_PNTR;
 
-Component component_constructor(char* sourceFile, char* params[], int paramCount);
-void* component_run(void* this);
-char* component_getName(Component this);
+ScopeStack_PNTR ScopeStack_enterScope(ScopeStack_PNTR this);
+void ScopeStack_exitScope(ScopeStack_PNTR this);
+int ScopeStack_size(ScopeStack_PNTR this);
 
-//TODO: Should these be declared at head of C file instead of in H file?
-void component_enterScope(Component this);
-void component_exitScope(Component this);
-char* component_readString(Component this);
-Component component_call(Component this);
-void component_declare(Component this);
-void component_store(Component this);
-void component_component(Component this);
+void ScopeStack_declare(ScopeStack_PNTR this, char *name, int type);
+void* ScopeStack_load(ScopeStack_PNTR this, char *name);
+void ScopeStack_store(ScopeStack_PNTR this, char *name, void *value);
 
-#endif //CVM_COMPONENT_H
+#endif //CVM_SCOPESTACK_H

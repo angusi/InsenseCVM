@@ -1,7 +1,5 @@
 /*
- * Component operation declarations.
- *
- * Components may be instantiated and run from this code.
+ * Code for declaring/storing and loading variables from a scope stack.
  *
  * Copyright (c) 2015, Angus Ireland
  * School of Computer Science, St. Andrews University
@@ -25,36 +23,23 @@
  * THE SOFTWARE.
  */
 
-#ifndef CVM_COMPONENT_H
-#define CVM_COMPONENT_H
+#ifndef CVM_HASHLIST_H
+#define CVM_HASHLIST_H
 
-#include <libgen.h>
-#include <string.h>
-#include <stdio.h>
-#include "GC/GC_mem.h"
-#include "Logger/Logger.h"
-#include "Collections/Stack.h"
-#include "ScopeStack/ScopeStack.h"
 
-typedef struct Component {
-    char* name;
-    FILE* sourceFile;
-    pthread_t threadId;
-    ScopeStack_PNTR scopeStack;
-    Stack_PNTR dataStack;
-} Component_s, *Component;
+#include "IteratedList.h"
 
-Component component_constructor(char* sourceFile, char* params[], int paramCount);
-void* component_run(void* this);
-char* component_getName(Component this);
+typedef struct HashListEntry {
+    char* identifier;
+    void* value;
+    int type; //BYTECODE_TYPE_<type>
+} HashListEntry_s, *HashListEntry_PNTR;
 
-//TODO: Should these be declared at head of C file instead of in H file?
-void component_enterScope(Component this);
-void component_exitScope(Component this);
-char* component_readString(Component this);
-Component component_call(Component this);
-void component_declare(Component this);
-void component_store(Component this);
-void component_component(Component this);
+typedef IteratedList_PNTR HashList_PNTR;
+typedef IteratedList_s HashList_s;
 
-#endif //CVM_COMPONENT_H
+void HashList_declare(HashList_PNTR hashList, char *name, int type);
+void* HashList_get(HashList_PNTR hashList, char *name);
+void HashList_put(HashList_PNTR hashList, char *name, void *value);
+
+#endif //CVM_HASHLIST_H

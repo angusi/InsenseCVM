@@ -41,11 +41,11 @@ void IteratedList_insertElement(IteratedList_PNTR l, void *element) {
     GC_assign(&newNode->payload, element); // increases ref count on element
 
     newNode->tail = l->first;
+    if (IteratedList_isEmpty(l)) { // we are about to add the first element to this Collections
+        l->next = newNode; // set the iterator index to point to the first node
+    }
     l->first = newNode;
 
-    if (IteratedList_isEmpty(l)) { // we are about to add the first element to this Collections
-        l->next = l->first; // set the iterator index to point to the first node
-    }
 }
 
 // Called when there are no more references to this node.

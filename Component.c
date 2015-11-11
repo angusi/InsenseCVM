@@ -28,6 +28,7 @@
 #include "Component.h"
 #include "BytecodeTable.h"
 #include "Main.h"
+#include "ScopeStack/ScopeStack.h"
 
 /**
  * Construct a new component object
@@ -44,6 +45,8 @@ Component component_constructor(char* sourceFile, char* params[], int paramCount
 
     //TODO: Check file exists
     this->sourceFile = fopen(sourceFile, "rb");
+
+    this->dataStack = Stack_constructor();
 
     log_logMessage(INFO, this->name, "Component Created");
 
@@ -67,11 +70,20 @@ void* component_run(void* component) {
             case BYTECODE_EXITSCOPE:
                 component_exitScope(this);
                 break;
+            case BYTECODE_COMPONENT:
+                component_component(this);
+                break;
             case BYTECODE_CALL:
                 component_call(this);
                 break;
+            case BYTECODE_DECLARE:
+                component_declare(this);
+                break;
+            case BYTECODE_STORE:
+                component_store(this);
+                break;
             default:
-                log_logMessage(WARNING, this->name, "Unknown Byte Read - %u", nextByte);
+                log_logMessage(ERROR, this->name, "Unknown Byte Read - %u", nextByte);
                 break;
         }
     }
@@ -98,6 +110,32 @@ void component_exitScope(Component this) {
     ScopeStack_exitScope(this->scopeStack);
 }
 
+void component_component(Component this) {
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, this->name, "COMPONENT");
+#endif
+
+    char* name = component_readString(this);
+    if(!strcmp(name, this->name)) { //Negated strcmp because 0 is match
+        log_logMessage(FATAL, this->name, "Syntax error in COMPONENT - name %d does not match expected %d", name, this->name);
+        //TODO: Exit thread cleanly:
+        pthread_exit(NULL);
+    }
+
+    int number_of_interfaces = fgetc(this->sourceFile);
+    log_logMessage(DEBUG, this->name, "    %d interfaces", number_of_interfaces);
+    for(int i = 0; i < number_of_interfaces; i++) {
+        int number_of_channels = fgetc(this->sourceFile);
+        log_logMessage(DEBUG, this->name, "    %d channels", number_of_channels);
+
+        for(int j = 0; j < number_of_channels; j++) {
+            int channel_direction = fgetc(this->sourceFile);
+            int channel_type = fgetc(this->sourceFile);
+            char* channel_name = component_readString(this);
+        }
+    }
+}
+
 Component component_call(Component this) {
 #ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, this->name, "CALL");
@@ -111,12 +149,12 @@ Component component_call(Component this) {
         char* name = component_readString(this);
         int number_of_parameters = fgetc(this->sourceFile);
 #ifdef DEBUGGINGENABLED
-        log_logMessage(DEBUG, this->name, name);
+        log_logMessage(DEBUG, this->name, "   Calling %s", name);
 #endif
 
         //TODO: Parameters for Components
 
-        pthread_t* newThread = GC_alloc(sizeof(pthread_t), false);
+        pthread_t newThread;
 
         size_t sourceFileNameLength = 8 + strlen(name) + 4 + 1; //"Insense_" + name + ".isc" + '\0'
         char* sourceFile = GC_alloc(sourceFileNameLength, false);
@@ -126,15 +164,56 @@ Component component_call(Component this) {
         sourceFile[sourceFileNameLength] = '\0';
         char* filePath = getFilePath(sourceFile);
         Component newComponent = component_constructor(filePath, NULL, number_of_parameters);
-        pthread_create(newThread, NULL, component_run, newComponent);
+        pthread_create(&newThread, NULL, component_run, newComponent);
         newComponent->threadId = newThread;
 
-        //No need to decref newThread, as we've essentially swapped ownership of the reference to the new component.
+        Stack_push(this->dataStack, newComponent);
+
         GC_decRef(sourceFile);
         GC_decRef(filePath);
         GC_decRef(name);
 
         return newComponent;
+    }
+}
+
+void component_declare(Component this) {
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, this->name, "DECLARE");
+#endif
+    int nextByte;
+    if((nextByte = fgetc(this->sourceFile)) != BYTECODE_TYPE_STRING) {
+        log_logMessage(FATAL, this->name, "Syntax error in DECLARE - %d", nextByte);
+        //TODO: Exit thread cleanly:
+        pthread_exit(NULL);
+    } else {
+        char *name = component_readString(this);
+#ifdef DEBUGGINGENABLED
+        log_logMessage(DEBUG, this->name, "   Declaring %s", name);
+#endif
+
+        nextByte = fgetc(this->sourceFile);
+        ScopeStack_declare(this->scopeStack, name, nextByte);
+    }
+}
+
+void component_store(Component this) {
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, this->name, "STORE");
+#endif
+
+    int nextByte;
+    if((nextByte = fgetc(this->sourceFile)) != BYTECODE_TYPE_STRING) {
+        log_logMessage(FATAL, this->name, "Syntax error in DECLARE - %d", nextByte);
+        //TODO: Exit thread cleanly:
+        pthread_exit(NULL);
+    } else {
+        char *name = component_readString(this);
+#ifdef DEBUGGINGENABLED
+        log_logMessage(DEBUG, this->name, "   Storing %s", name);
+#endif
+
+        ScopeStack_store(this->scopeStack, name, Stack_pop(this->dataStack));
     }
 }
 
@@ -144,8 +223,6 @@ char* component_getName(Component this) {
     name[strlen(this->name)] = '\0';
     return name;
 }
-
-
 
 char* component_readString(Component this) {
     int numChars = 0;

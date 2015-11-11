@@ -1,7 +1,6 @@
 /*
- * Component operation declarations.
- *
- * Components may be instantiated and run from this code.
+ * Scope Stacks manage variable scoping.
+ * Scope levels are created to store variables, and when they are destroyed those variables are also destroyed.
  *
  * Copyright (c) 2015, Angus Ireland
  * School of Computer Science, St. Andrews University
@@ -25,36 +24,41 @@
  * THE SOFTWARE.
  */
 
-#ifndef CVM_COMPONENT_H
-#define CVM_COMPONENT_H
+#include "ScopeStack.h"
 
-#include <libgen.h>
-#include <string.h>
-#include <stdio.h>
-#include "GC/GC_mem.h"
-#include "Logger/Logger.h"
-#include "Collections/Stack.h"
-#include "ScopeStack/ScopeStack.h"
 
-typedef struct Component {
-    char* name;
-    FILE* sourceFile;
-    pthread_t threadId;
-    ScopeStack_PNTR scopeStack;
-    Stack_PNTR dataStack;
-} Component_s, *Component;
+ScopeStack_PNTR ScopeStack_enterScope(ScopeStack_PNTR this) {
+    if(this == NULL) {
+        //No stack yet.
+        this = IteratedList_constructList();
+    }
 
-Component component_constructor(char* sourceFile, char* params[], int paramCount);
-void* component_run(void* this);
-char* component_getName(Component this);
+    ScopeLevel_PNTR newLevel = IteratedList_constructList();
+    IteratedList_insertElement(this, newLevel);
 
-//TODO: Should these be declared at head of C file instead of in H file?
-void component_enterScope(Component this);
-void component_exitScope(Component this);
-char* component_readString(Component this);
-Component component_call(Component this);
-void component_declare(Component this);
-void component_store(Component this);
-void component_component(Component this);
+    return this;
+}
 
-#endif //CVM_COMPONENT_H
+void ScopeStack_exitScope(ScopeStack_PNTR this) {
+    //Elements are added at the front of the list, so "pop" the first one.
+    if(this->first != NULL) {
+        IteratedList_removeElement(this, this->first->payload);
+    }
+}
+
+int ScopeStack_size(ScopeStack_PNTR this) {
+    return IteratedList_getListLength(this);
+}
+
+
+void ScopeStack_declare(ScopeStack_PNTR this, char *name, int type) {
+    return HashList_declare(this, name, type);
+}
+
+void *ScopeStack_load(ScopeStack_PNTR this, char *name) {
+    return HashList_get(this, name);
+}
+
+void ScopeStack_store(ScopeStack_PNTR this, char *name, void *value) {
+    return HashList_put(this, name, value);
+}

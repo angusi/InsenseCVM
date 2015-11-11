@@ -1,8 +1,8 @@
 #include <stdio.h>
-#include "../Collections/Stack.h"
-#include "../GC/GC_mem.h"
-#include "ANSI-Colours.h"
-#include "../Logger/Logger.h"
+#include "../Collections/Stack.h"    // For testing
+#include "../GC/GC_mem.h"            // For memory cleanup
+#include "ANSI-Colours.h"            // For test results
+#include "../Logger/Logger.h"        // Init log for stack/GC's logging
 
 bool testConstructor();
 bool testPushItemOntoStack();

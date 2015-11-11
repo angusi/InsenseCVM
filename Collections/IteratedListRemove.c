@@ -5,9 +5,9 @@
 #include "../GC/GC_mem.h"
 
 
-// Removes an element from the Collections l, decrements ref count on element
+// Removes an element from the List l, decrements ref count on element
 void IteratedList_removeElement(IteratedList_PNTR l, void *element) {
-    // case: error, l is null, i.e. no Collections defined
+    // case: error, l is null, i.e. no List defined
     if(l==NULL){
         log_logMessage(ERROR, ITERATED_LIST_NAME, ITERATED_LIST_NULL_POINTER);
         return;
@@ -21,7 +21,7 @@ void IteratedList_removeElement(IteratedList_PNTR l, void *element) {
         return;
     }
 
-    // case: element we want to remove is right at the start of the Collections
+    // case: element we want to remove is right at the start of the List
     if(l->first->payload == element){
         IteratedListNode_PNTR oldFirst = l->first;
         l->first = oldFirst->tail;
