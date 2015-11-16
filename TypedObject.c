@@ -1,6 +1,5 @@
 /*
- * Scope Stacks manage variable scoping.
- * Scope levels are created to store variables, and when they are destroyed those variables are also destroyed.
+ * 
  *
  * Copyright (c) 2015, Angus Ireland
  * School of Computer Science, St. Andrews University
@@ -24,41 +23,18 @@
  * THE SOFTWARE.
  */
 
-#include "ScopeStack.h"
+#include "TypedObject.h"
 
+static void TypedObject_decRef(TypedObject_PNTR pntr);
 
-ScopeStack_PNTR ScopeStack_enterScope(ScopeStack_PNTR this) {
-    if(this == NULL) {
-        //No stack yet.
-        this = IteratedList_constructList();
-    }
-
-    ScopeLevel_PNTR newLevel = IteratedList_constructList();
-    IteratedList_insertElement(this, newLevel);
-
-    return this;
+TypedObject_PNTR TypedObject_construct(unsigned int type, void* object) {
+    TypedObject_PNTR newObject = GC_alloc(sizeof(TypedObject_s), true);
+    newObject->type = type;
+    GC_assign(&(newObject->object), object);
+    newObject->decRef = TypedObject_decRef;
+    return newObject;
 }
 
-void ScopeStack_exitScope(ScopeStack_PNTR this) {
-    //Elements are added at the front of the list, so "pop" the first one.
-    if(this->first != NULL) {
-        IteratedList_removeElement(this, this->first->payload);
-    }
-}
-
-int ScopeStack_size(ScopeStack_PNTR this) {
-    return IteratedList_getListLength(this);
-}
-
-
-void ScopeStack_declare(ScopeStack_PNTR this, char *name) {
-    return ListMap_declare(this, name);
-}
-
-void* ScopeStack_load(ScopeStack_PNTR this, char *name) {
-    return ListMap_get(this, name);
-}
-
-void ScopeStack_store(ScopeStack_PNTR this, char *name, void *value) {
-    return ListMap_put(this, name, value);
+void TypedObject_decRef(TypedObject_PNTR this) {
+    GC_decRef(this->object);
 }

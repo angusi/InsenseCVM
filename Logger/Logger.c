@@ -33,9 +33,11 @@ log_Level_t logged_level = INFO;
 pthread_mutex_t* logMutex;
 
 void log_init() {
-    logMutex = malloc(sizeof(pthread_mutex_t));
-    pthread_mutex_init(logMutex, NULL);
-    printf("Logging subsystem initialised\n");
+    if(logMutex == NULL) {
+        logMutex = malloc(sizeof(pthread_mutex_t));
+        pthread_mutex_init(logMutex, NULL);
+        printf("Logging subsystem initialised\n");
+    }
 }
 
 char* getLevelString(log_Level_t level) {

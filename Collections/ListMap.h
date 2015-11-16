@@ -29,17 +29,19 @@
 
 #include "IteratedList.h"
 
-typedef struct HashListEntry {
-    char* identifier;
+typedef struct ListMapEntry ListMapEntry_s, *ListMapEntry_PNTR;
+struct ListMapEntry {
+    void (*decRef)(ListMapEntry_PNTR pntr);
+    char* key;
     void* value;
-    int type; //BYTECODE_TYPE_<type>
-} HashListEntry_s, *HashListEntry_PNTR;
+};
 
-typedef IteratedList_PNTR HashList_PNTR;
-typedef IteratedList_s HashList_s;
+typedef IteratedList_PNTR ListMap_PNTR;
+typedef IteratedList_s ListMap_s;
 
-void HashList_declare(HashList_PNTR hashList, char *name, int type);
-void* HashList_get(HashList_PNTR hashList, char *name);
-void HashList_put(HashList_PNTR hashList, char *name, void *value);
+ListMap_PNTR ListMap_constructor();
+void ListMap_declare(ListMap_PNTR hashList, char *key);
+void*ListMap_get(ListMap_PNTR hashList, char *key);
+void ListMap_put(ListMap_PNTR hashList, char *key, void *value);
 
 #endif //CVM_HASHLIST_H

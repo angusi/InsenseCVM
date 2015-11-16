@@ -103,6 +103,10 @@ void Stack_clear(Stack_PNTR this) {
     }
 }
 
+int Stack_size(Stack_PNTR this) {
+    return this->stackTop;
+}
+
 // decRef function is called when ref count to a Stack object is zero
 // before freeing memory for Stack object
 static void Stack_decRef(Stack_PNTR this){

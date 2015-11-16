@@ -49,5 +49,6 @@ void Stack_push(Stack_PNTR this, void* item);
 void* Stack_pop(Stack_PNTR this);
 void* Stack_peek(Stack_PNTR this);
 void Stack_clear(Stack_PNTR this);
+int Stack_size(Stack_PNTR this);
 
 #endif //CMV_STACK_H

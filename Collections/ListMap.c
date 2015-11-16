@@ -25,31 +25,37 @@
 
 
 #include <stddef.h>
-#include "HashList.h"
+#include "ListMap.h"
 #include "../GC/GC_mem.h"
 #include "../Logger/Logger.h"
 
-void HashList_declare(HashList_PNTR hashList, char *name, int type) {
-    HashListEntry_PNTR newVar = GC_alloc(sizeof(HashListEntry_s), true);
-    newVar->identifier = GC_alloc(strlen(name)+1, false);
-    strncpy(newVar->identifier, name, strlen(name));
+void ListMap_decRef(ListMapEntry_PNTR pntr);
 
-    newVar->type = type;
-
-    //No need, since GC_alloc 0's memory for us:
-    //newVar->value = NULL;
-
-    IteratedList_insertElement(hashList->first->payload, newVar);
+ListMap_PNTR ListMap_constructor() {
+    return IteratedList_constructList();
 }
 
-void* HashList_get(HashList_PNTR hashList, char *name) {
+void ListMap_declare(ListMap_PNTR hashList, char *key) {
+    ListMapEntry_PNTR newEntry = GC_alloc(sizeof(ListMapEntry_s), true);
+    newEntry->key = GC_alloc(strlen(key) + 1, false);
+    strncpy(newEntry->key, key, strlen(key));
+
+    //No need, since GC_alloc 0's memory for us:
+    //newEntry->value = NULL;
+
+    newEntry->decRef = ListMap_decRef;
+
+    IteratedList_insertElement(hashList->first->payload, newEntry);
+}
+
+void* ListMap_get(ListMap_PNTR hashList, char *key) {
     IteratedListNode_PNTR scopeStackNode = hashList->first;
     while(scopeStackNode!=NULL){
         IteratedList_PNTR scopeLevel = scopeStackNode->payload;
         IteratedListNode_PNTR scopeLevelNode = scopeLevel->first;
         while(scopeLevelNode!=NULL) {
-            HashListEntry_PNTR thisVar = scopeLevelNode->payload;
-            if(!strcmp(thisVar->identifier, name)) {
+            ListMapEntry_PNTR thisVar = scopeLevelNode->payload;
+            if(!strcmp(thisVar->key, key)) {
                 //NEGATE the strcmp, as it returns 0 on match!
                 return thisVar->value;
             }
@@ -63,15 +69,15 @@ void* HashList_get(HashList_PNTR hashList, char *name) {
 }
 
 int HashList_isDesiredElement(void *element, void *key) {
-    return strcmp(((HashListEntry_PNTR)element)->identifier, (char*)key);
+    return strcmp(((ListMapEntry_PNTR)element)->key, (char*)key);
 }
 
-void HashList_put(HashList_PNTR hashList, char *name, void *value) {
-    HashListEntry_PNTR varElement = NULL;
+void ListMap_put(ListMap_PNTR hashList, char *key, void *value) {
+    ListMapEntry_PNTR varElement = NULL;
     IteratedListNode_PNTR currentStackEntry = hashList->first;
 
     for(int i = 0; i < IteratedList_getListLength(hashList); i++) {
-        if((varElement = IteratedList_searchList(currentStackEntry->payload, HashList_isDesiredElement, name)) != NULL) {
+        if((varElement = IteratedList_searchList(currentStackEntry->payload, HashList_isDesiredElement, key)) != NULL) {
             break;
         } else {
             currentStackEntry = currentStackEntry->tail;
@@ -79,9 +85,15 @@ void HashList_put(HashList_PNTR hashList, char *name, void *value) {
     }
 
     if(varElement == NULL) {
-        log_logMessage(ERROR, "Variable Store", "Undeclared variable %s", name);
+        log_logMessage(ERROR, "Variable Store", "Undeclared variable %s", key);
         return;
     }
 
     GC_assign(&(varElement->value), value);
+    GC_decRef(value);
+}
+
+void ListMap_decRef(ListMapEntry_PNTR pntr) {
+    GC_decRef(pntr->key);
+    GC_decRef(pntr->value);
 }

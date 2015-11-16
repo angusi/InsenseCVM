@@ -37,8 +37,11 @@
 pthread_mutex_t* GC_mutex;
 
 void GC_init() {
-    GC_mutex = malloc(sizeof(pthread_mutex_t));
-    pthread_mutex_init(GC_mutex, NULL);
+    if(GC_mutex == NULL) {
+        GC_mutex = malloc(sizeof(pthread_mutex_t));
+        pthread_mutex_init(GC_mutex, NULL);
+        printf("GC subsystem initialised\n");
+    }
 }
 
 void GC_assign(void *generic_var_pntr, void *new_mem) {

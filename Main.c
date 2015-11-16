@@ -36,10 +36,9 @@
 char* directory;
 
 int main(int argc, char* argv[]) {
+    printf("%s %s\n", PROGRAM_NAME, PROGRAM_VERSION);
     log_init();
     GC_init();
-
-    printf("%s %s\n", PROGRAM_NAME, PROGRAM_VERSION);
 
     if(argc < 2 || argc == 3 || argc > 4) {
         printf(PROGRAM_USAGE, argv[0]);
@@ -54,7 +53,7 @@ int main(int argc, char* argv[]) {
     strncpy(directory, argv[1], strlen(argv[1]));
 
     char* mainFile = getFilePath("Main.isc");
-    Component_PNTR mainComponent = component_constructor(mainFile, NULL, 0);
+    Component_PNTR mainComponent = component_newComponent(mainFile, NULL, 0);
 
     pthread_t mainThread;
     pthread_create(&mainThread, NULL, component_run, mainComponent);

@@ -40,11 +40,45 @@ void IteratedList_insertElement(IteratedList_PNTR l, void *element) {
     }
     GC_assign(&newNode->payload, element); // increases ref count on element
 
-    newNode->tail = l->first;
     if (IteratedList_isEmpty(l)) { // we are about to add the first element to this Collections
         l->next = newNode; // set the iterator index to point to the first node
+        l->last = newNode; // set the last pointer to this node
     }
+    newNode->tail = l->first;
     l->first = newNode;
+
+}
+
+void IteratedList_insertElementAtTail(IteratedList_PNTR l, void *element) {
+
+    if (l == NULL) {
+        log_logMessage(ERROR, ITERATED_LIST_NAME, ITERATED_LIST_NULL_POINTER);
+        return;
+    }
+
+    // putting NULL in the Collections is an issue if the Collections is supposed
+    // to contain valid references to objects, so prevented here
+    if (element == NULL) {
+        log_logMessage(ERROR, ITERATED_LIST_NAME, ITERATED_LIST_NULL_ELEMENT);
+        return;
+    }
+
+    IteratedListNode_PNTR newNode = IteratedList_constructNode();
+    if (newNode == NULL) {
+        log_logMessage(ERROR, ITERATED_LIST_NAME, ITERATED_LIST_CONSTRUCT_NODE_FAILED);
+        return;
+    }
+    GC_assign(&newNode->payload, element); // increases ref count on element
+
+
+    if (IteratedList_isEmpty(l)) { // we are about to add the first element to this Collections
+        l->first = newNode; // set the first pointer to this node
+        l->next = newNode; // set the iterator index to point to the first node
+        l->last = newNode; // set the last pointer to this node
+    } else {
+        l->last->tail = newNode;
+    }
+    newNode->tail = l->first;
 
 }
 

@@ -101,7 +101,7 @@ bool testDeclareStoreLoad() {
     bool result;
 
     ScopeStack_PNTR scopeStack = ScopeStack_enterScope(NULL);
-    ScopeStack_declare(scopeStack, "test1", BYTECODE_TYPE_INTEGER);
+    ScopeStack_declare(scopeStack, "test1");
 
     int* value = GC_alloc(sizeof(int), false);
     *value = 42;

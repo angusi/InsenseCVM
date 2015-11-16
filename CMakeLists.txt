@@ -3,7 +3,7 @@ project(CVM)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -lpthread -Wall -Wextra -DDEBUGGINGENABLED") #
 
-set(SOURCE_FILES Main.c Main.h Strings.h BytecodeTable.h ExitCodes.h Component.c Component.h)
+set(SOURCE_FILES Main.c Main.h Strings.h BytecodeTable.h ExitCodes.h Component.c Component.h TypedObject.c TypedObject.h)
 add_subdirectory(GC)
 add_subdirectory(Collections)
 add_subdirectory(Logger)

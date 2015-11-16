@@ -28,7 +28,7 @@
 #define CVM_SCOPESTACK_H
 
 #include "../Collections/Stack.h"
-#include "../Collections/HashList.h"
+#include "../Collections/ListMap.h"
 
 typedef IteratedList_PNTR ScopeStack_PNTR, ScopeLevel_PNTR;
 
@@ -36,7 +36,7 @@ ScopeStack_PNTR ScopeStack_enterScope(ScopeStack_PNTR this);
 void ScopeStack_exitScope(ScopeStack_PNTR this);
 int ScopeStack_size(ScopeStack_PNTR this);
 
-void ScopeStack_declare(ScopeStack_PNTR this, char *name, int type);
+void ScopeStack_declare(ScopeStack_PNTR this, char *name);
 void* ScopeStack_load(ScopeStack_PNTR this, char *name);
 void ScopeStack_store(ScopeStack_PNTR this, char *name, void *value);
 
