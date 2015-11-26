@@ -30,6 +30,7 @@
 
 typedef struct TypedObject TypedObject_s, *TypedObject_PNTR;
 struct TypedObject {
+    //TODO: Rename as eg value_decl?
     void (*decRef)(TypedObject_PNTR pntr);
     unsigned int type;
     void* object;
