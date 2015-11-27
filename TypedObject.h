@@ -32,10 +32,11 @@ typedef struct TypedObject TypedObject_s, *TypedObject_PNTR;
 struct TypedObject {
     //TODO: Rename as eg value_decl?
     void (*decRef)(TypedObject_PNTR pntr);
-    unsigned int type;
+    int type;
     void* object;
 };
 
 TypedObject_PNTR TypedObject_construct(unsigned int type, void* object);
+bool TypedObject_isNumber(TypedObject_PNTR this);
 
 #endif //CVM_TYPEDOBJECT_H

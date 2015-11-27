@@ -50,13 +50,14 @@ Component_PNTR component_newComponent(char *sourceFile, IteratedList_PNTR params
     this->sourceFile = fopen(sourceFile, "rb");
     if(this->sourceFile == NULL) {
         log_logMessage(FATAL, this->name, "Component Source file does not exist!");
-        //Todo: Exit thread cleanly:
-        pthread_exit(NULL);
+        component_cleanUpAndStop(this, NULL);
     }
 
     this->parameters = params;
 
     this->dataStack = Stack_constructor();
+
+    this->stop = false;
 
     log_logMessage(INFO, this->name, "Component Created");
 
@@ -72,7 +73,7 @@ void* component_run(void* component) {
     log_logMessage(INFO, this->name, "Start");
 
     int nextByte;
-    while((nextByte = fgetc(this->sourceFile)) != EOF) {
+    while(!this->stop && (nextByte = fgetc(this->sourceFile)) != EOF) {
         switch(nextByte) {
             case BYTECODE_ENTERSCOPE:
                 component_enterScope(this);
@@ -102,7 +103,25 @@ void* component_run(void* component) {
                 component_constructor(this);
                 break;
             case BYTECODE_ADD:
+            case BYTECODE_SUB:
+            case BYTECODE_MUL:
+            case BYTECODE_DIV:
+            case BYTECODE_MOD:
+            case BYTECODE_LESS:
+            case BYTECODE_LESSEQUAL:
+            case BYTECODE_EQUAL:
+            case BYTECODE_MOREEQUAL:
+            case BYTECODE_MORE:
+            case BYTECODE_UNEQUAL:
+            case BYTECODE_AND:
+            case BYTECODE_OR:
                 component_expression(this, nextByte);
+                break;
+            case BYTECODE_NOT:
+                component_not(this);
+                break;
+            case BYTECODE_STOP:
+                component_stop(this);
                 break;
             default:
                 log_logMessage(ERROR, this->name, "Unknown Byte Read - %u", nextByte);
@@ -111,10 +130,17 @@ void* component_run(void* component) {
     }
 
     log_logMessage(INFO, this->name, "End");
+    component_cleanUpAndStop(this, NULL);
+
+    return NULL;
+}
+
+void component_cleanUpAndStop(Component_PNTR this, void* __retval) {
+    log_logMessage(INFO, this->name, "Cleaning up Component and returning to caller.");
 
     if(this->waitComponents != NULL) {
         log_logMessage(INFO, this->name, "Waiting on started components.");
-        while(Stack_peek(this->waitComponents) != NULL) {
+        while(Stack_size(this->waitComponents) != 0) {
             Component_PNTR waitOn = ((TypedObject_PNTR)Stack_pop(this->waitComponents))->object;
             log_logMessage(INFO, this->name, "  Waiting on %s (%lu)", waitOn->name, waitOn->threadId);
             pthread_join(waitOn->threadId, NULL);
@@ -123,10 +149,16 @@ void* component_run(void* component) {
         log_logMessage(INFO, this->name, "All started components stopped.");
     }
 
-    return NULL;
+    //Copy name so we can use it in the done message, after Component has been trashed.
+    char* name = malloc(strlen(this->name)+1);
+    strcpy(name, this->name);
+    name[strlen(this->name)] = '\0';
+
+    GC_decRef(this);
+    log_logMessage(INFO, name, "DONE. Component cleaned up.");
+    free(name);
+    pthread_exit(__retval);
 }
-
-
 
 void component_enterScope(Component_PNTR this) {
 #ifdef DEBUGGINGENABLED
@@ -150,8 +182,7 @@ void component_component(Component_PNTR this) {
     char* name = component_readString(this);
     if(!strcmp(name, this->name)) { //Negated strcmp because 0 is match
         log_logMessage(FATAL, this->name, "Syntax error in COMPONENT - name %d does not match expected %d", name, this->name);
-        //TODO: Exit thread cleanly:
-        pthread_exit(NULL);
+        component_cleanUpAndStop(this, NULL);
     }
 
     int number_of_interfaces = fgetc(this->sourceFile);
@@ -165,8 +196,10 @@ void component_component(Component_PNTR this) {
             int channel_type = fgetc(this->sourceFile);
             char* channel_name = component_readString(this);
             //TODO: channels
+            GC_decRef(channel_name);
         }
     }
+    GC_decRef(name);
 }
 
 Component_PNTR component_call(Component_PNTR this) {
@@ -176,8 +209,8 @@ Component_PNTR component_call(Component_PNTR this) {
     int nextByte;
     if((nextByte = fgetc(this->sourceFile)) != BYTECODE_TYPE_STRING) {
         log_logMessage(FATAL, this->name, "Syntax error in CALL - %d", nextByte);
-        //TODO: Exit thread cleanly:
-        pthread_exit(NULL);
+        component_cleanUpAndStop(this, NULL);
+        return NULL; //NULL - cleanUp will have cleaned up and terminated thread already.
     } else {
         char* name = component_readString(this);
         int number_of_parameters = fgetc(this->sourceFile);
@@ -247,11 +280,11 @@ void component_constructor(Component_PNTR this) {
                 int nextByte;
                 if((nextByte = fgetc(this->sourceFile)) != BYTECODE_TYPE_STRING) {
                     log_logMessage(FATAL, this->name, "Syntax error in CONSTRUCTOR - %d", nextByte);
-                    //TODO: Exit thread cleanly:
-                    pthread_exit(NULL);
+                    component_cleanUpAndStop(this, NULL);
                 } else {
                     char *name = component_readString(this);
                     IteratedList_insertElementAtTail(readParams, name);
+                    GC_decRef(name);
                 }
             } else {
                 thisConstructor = false;
@@ -276,7 +309,11 @@ void component_constructor(Component_PNTR this) {
             ScopeStack_store(this->scopeStack, name, IteratedList_getNextElement(this->parameters));
             GC_decRef(name);
         }
-        GC_decRef(this->parameters); //Finished with this list now, can free it up.
+
+        //Finished with these lists now, can free them up.
+        if(this->parameters != NULL) {
+            GC_decRef(this->parameters);
+        }
         GC_decRef(readParams);
     } else {
         log_logMessage(INFO, this->name, " Constructor mismatch, fastforwarding");
@@ -289,8 +326,7 @@ void component_constructor(Component_PNTR this) {
             component_constructor(this);
         } else {
             log_logMessage(FATAL, this->name, "Constructor not fond!");
-            //TODO: Exit thread cleanly:
-            pthread_exit(NULL);
+            component_cleanUpAndStop(this, NULL);
         }
     }
 }
@@ -302,16 +338,16 @@ void component_declare(Component_PNTR this) {
     int nextByte;
     if((nextByte = fgetc(this->sourceFile)) != BYTECODE_TYPE_STRING) {
         log_logMessage(FATAL, this->name, "Syntax error in DECLARE - %d", nextByte);
-        //TODO: Exit thread cleanly:
-        pthread_exit(NULL);
+        component_cleanUpAndStop(this, NULL);
     } else {
-        char *name = component_readString(this);
+        char* name = component_readString(this);
 #ifdef DEBUGGINGENABLED
         log_logMessage(DEBUG, this->name, "   Declaring %s", name);
 #endif
 
-        nextByte = fgetc(this->sourceFile);
+        fgetc(this->sourceFile); //TODO: Check this byte matches TYPE_COMPONENT?
         ScopeStack_declare(this->scopeStack, name);
+        GC_decRef(name);
     }
 }
 
@@ -323,8 +359,7 @@ void component_store(Component_PNTR this) {
     int nextByte;
     if((nextByte = fgetc(this->sourceFile)) != BYTECODE_TYPE_STRING) {
         log_logMessage(FATAL, this->name, "Syntax error in DECLARE - %d", nextByte);
-        //TODO: Exit thread cleanly:
-        pthread_exit(NULL);
+        component_cleanUpAndStop(this, NULL);
     } else {
         char *name = component_readString(this);
 #ifdef DEBUGGINGENABLED
@@ -332,6 +367,7 @@ void component_store(Component_PNTR this) {
 #endif
 
         ScopeStack_store(this->scopeStack, name, Stack_pop(this->dataStack));
+        GC_decRef(name);
     }
 }
 
@@ -361,6 +397,7 @@ void component_push(Component_PNTR this) {
         case BYTECODE_TYPE_STRING:
             string = component_readString(this);
             Stack_push(this->dataStack, TypedObject_construct(BYTECODE_TYPE_STRING, string));
+            GC_decRef(string);
             break;
         default:
             log_logMessage(ERROR, this->name, "Unrecognised type - %d", type);
@@ -376,8 +413,7 @@ void component_load(Component_PNTR this) {
     int nextByte;
     if((nextByte = fgetc(this->sourceFile)) != BYTECODE_TYPE_STRING) {
         log_logMessage(FATAL, this->name, "Syntax error in LOAD - %d", nextByte);
-        //TODO: Exit thread cleanly:
-        pthread_exit(NULL);
+        component_cleanUpAndStop(this, NULL);
     } else {
         char *name = component_readString(this);
 #ifdef DEBUGGINGENABLED
@@ -385,19 +421,378 @@ void component_load(Component_PNTR this) {
 #endif
 
         Stack_push(this->dataStack, ScopeStack_load(this->scopeStack, name));
+        GC_decRef(name);
     }
 }
 
-void component_expression(Component_PNTR this, unsigned int bytecode_op) {
+void component_expression(Component_PNTR this, int bytecode_op) {
 #ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, this->name, "EXPRESSION %u", bytecode_op);
 #endif
 
-    //TODO: This.
+    if(Stack_size(this->dataStack) < 2) {
+        log_logMessage(FATAL, this->name, "Syntax error in EXPR %u - Not enough data in stack", bytecode_op);
+        component_cleanUpAndStop(this, NULL);
+    }
+
+    TypedObject_PNTR second = Stack_pop(this->dataStack);
+    TypedObject_PNTR first = Stack_pop(this->dataStack);
+
+    TypedObject_PNTR result = NULL;
+
+    if(bytecode_op == BYTECODE_ADD) {
+
+        if(!TypedObject_isNumber(first) || !TypedObject_isNumber(second)) {
+            log_logMessage(FATAL, this->name, "Syntax error in EXPR %u - Operand Type Mismatched", bytecode_op);
+            component_cleanUpAndStop(this, NULL);
+        }
+        if(first->type == BYTECODE_TYPE_REAL || second->type == BYTECODE_TYPE_REAL) {
+            result = TypedObject_construct(BYTECODE_TYPE_REAL, GC_alloc(sizeof(double), false));
+            *(double*)result->object = *(double*)first->object + *(double*)second->object;
+        } else if(first->type == BYTECODE_TYPE_UNSIGNED_INTEGER || second->type == BYTECODE_TYPE_UNSIGNED_INTEGER) {
+            result = TypedObject_construct(BYTECODE_TYPE_UNSIGNED_INTEGER, GC_alloc(sizeof(unsigned int), false));
+            *(unsigned int*)result->object = *(unsigned int*)first->object + *(unsigned int*)second->object;
+        } else if(first->type == BYTECODE_TYPE_INTEGER || second->type == BYTECODE_TYPE_INTEGER) {
+            result = TypedObject_construct(BYTECODE_TYPE_INTEGER, GC_alloc(sizeof(int), false));
+            *(int*)result->object = *(int*)first->object + *(int*)second->object;
+        } else if(first->type == BYTECODE_TYPE_BYTE || second->type == BYTECODE_TYPE_BYTE) {
+            result = TypedObject_construct(BYTECODE_TYPE_BYTE, GC_alloc(sizeof(char), false));
+            *(char*)result->object = *(char*)first->object + *(char*)second->object;
+        }
+    } else if(bytecode_op == BYTECODE_SUB) {
+        if(!TypedObject_isNumber(first) || !TypedObject_isNumber(second)) {
+            log_logMessage(FATAL, this->name, "Syntax error in EXPR %u - Operand Type Mismatched", bytecode_op);
+            component_cleanUpAndStop(this, NULL);
+        }
+        if(first->type == BYTECODE_TYPE_REAL || second->type == BYTECODE_TYPE_REAL) {
+            result = TypedObject_construct(BYTECODE_TYPE_REAL, GC_alloc(sizeof(double), false));
+            *(double*)result->object = *(double*)first->object - *(double*)second->object;
+        } else if(first->type == BYTECODE_TYPE_UNSIGNED_INTEGER || second->type == BYTECODE_TYPE_UNSIGNED_INTEGER) {
+            result = TypedObject_construct(BYTECODE_TYPE_UNSIGNED_INTEGER, GC_alloc(sizeof(unsigned int), false));
+            *(unsigned int*)result->object = *(unsigned int*)first->object - *(unsigned int*)second->object;
+        } else if(first->type == BYTECODE_TYPE_INTEGER || second->type == BYTECODE_TYPE_INTEGER) {
+            result = TypedObject_construct(BYTECODE_TYPE_INTEGER, GC_alloc(sizeof(int), false));
+            *(int*)result->object = *(int*)first->object - *(int*)second->object;
+        } else if(first->type == BYTECODE_TYPE_BYTE || second->type == BYTECODE_TYPE_BYTE) {
+            result = TypedObject_construct(BYTECODE_TYPE_BYTE, GC_alloc(sizeof(char), false));
+            *(char*)result->object = *(char*)first->object - *(char*)second->object;
+        }
+    } else if(bytecode_op == BYTECODE_MUL) {
+        if(!TypedObject_isNumber(first) || !TypedObject_isNumber(second)) {
+            log_logMessage(FATAL, this->name, "Syntax error in EXPR %u - Operand Type Mismatched", bytecode_op);
+            component_cleanUpAndStop(this, NULL);
+        }
+        if(first->type == BYTECODE_TYPE_REAL || second->type == BYTECODE_TYPE_REAL) {
+            result = TypedObject_construct(BYTECODE_TYPE_REAL, GC_alloc(sizeof(double), false));
+            *(double*)result->object = *(double*)first->object * *(double*)second->object;
+        } else if(first->type == BYTECODE_TYPE_UNSIGNED_INTEGER || second->type == BYTECODE_TYPE_UNSIGNED_INTEGER) {
+            result = TypedObject_construct(BYTECODE_TYPE_UNSIGNED_INTEGER, GC_alloc(sizeof(unsigned int), false));
+            *(unsigned int*)result->object = *(unsigned int*)first->object * *(unsigned int*)second->object;
+        } else if(first->type == BYTECODE_TYPE_INTEGER || second->type == BYTECODE_TYPE_INTEGER) {
+            result = TypedObject_construct(BYTECODE_TYPE_INTEGER, GC_alloc(sizeof(int), false));
+            *(int*)result->object = *(int*)first->object * *(int*)second->object;
+        } else if(first->type == BYTECODE_TYPE_BYTE || second->type == BYTECODE_TYPE_BYTE) {
+            result = TypedObject_construct(BYTECODE_TYPE_BYTE, GC_alloc(sizeof(char), false));
+            *(char*)result->object = *(char*)first->object * *(char*)second->object;
+        }
+    } else if(bytecode_op == BYTECODE_DIV) {
+        if(!TypedObject_isNumber(first) || !TypedObject_isNumber(second)) {
+            log_logMessage(FATAL, this->name, "Syntax error in EXPR %u - Operand Type Mismatched", bytecode_op);
+            component_cleanUpAndStop(this, NULL);
+        }
+        if(first->type == BYTECODE_TYPE_REAL || second->type == BYTECODE_TYPE_REAL) {
+            result = TypedObject_construct(BYTECODE_TYPE_REAL, GC_alloc(sizeof(double), false));
+            *(double*)result->object = *(double*)first->object / *(double*)second->object;
+        } else if(first->type == BYTECODE_TYPE_UNSIGNED_INTEGER || second->type == BYTECODE_TYPE_UNSIGNED_INTEGER) {
+            result = TypedObject_construct(BYTECODE_TYPE_UNSIGNED_INTEGER, GC_alloc(sizeof(unsigned int), false));
+            *(unsigned int*)result->object = *(unsigned int*)first->object / *(unsigned int*)second->object;
+        } else if(first->type == BYTECODE_TYPE_INTEGER || second->type == BYTECODE_TYPE_INTEGER) {
+            result = TypedObject_construct(BYTECODE_TYPE_INTEGER, GC_alloc(sizeof(int), false));
+            *(int*)result->object = *(int*)first->object / *(int*)second->object;
+        } else if(first->type == BYTECODE_TYPE_BYTE || second->type == BYTECODE_TYPE_BYTE) {
+            result = TypedObject_construct(BYTECODE_TYPE_BYTE, GC_alloc(sizeof(char), false));
+            *(char*)result->object = *(char*)first->object / *(char*)second->object;
+        }
+    } else if(bytecode_op == BYTECODE_MOD) {
+        if(!TypedObject_isNumber(first) || !TypedObject_isNumber(second)) {
+            log_logMessage(FATAL, this->name, "Syntax error in EXPR %u - Operand Type Mismatched", bytecode_op);
+            component_cleanUpAndStop(this, NULL);
+        }
+        if(first->type == BYTECODE_TYPE_REAL || second->type == BYTECODE_TYPE_REAL) {
+            //Cannot perform % operation on Reals in Insense
+            log_logMessage(FATAL, this->name, "Syntax error in EXPR %u - Operand Type Mismatched", bytecode_op);
+            component_cleanUpAndStop(this, NULL);
+        } else if(first->type == BYTECODE_TYPE_UNSIGNED_INTEGER || second->type == BYTECODE_TYPE_UNSIGNED_INTEGER) {
+            result = TypedObject_construct(BYTECODE_TYPE_UNSIGNED_INTEGER, GC_alloc(sizeof(unsigned int), false));
+            *(unsigned int*)result->object = *(unsigned int*)first->object % *(unsigned int*)second->object;
+        } else if(first->type == BYTECODE_TYPE_INTEGER || second->type == BYTECODE_TYPE_INTEGER) {
+            result = TypedObject_construct(BYTECODE_TYPE_INTEGER, GC_alloc(sizeof(int), false));
+            *(int*)result->object = *(int*)first->object % *(int*)second->object;
+        } else if(first->type == BYTECODE_TYPE_BYTE || second->type == BYTECODE_TYPE_BYTE) {
+            result = TypedObject_construct(BYTECODE_TYPE_BYTE, GC_alloc(sizeof(char), false));
+            *(char*)result->object = *(char*)first->object % *(char*)second->object;
+        }
+    } else if(bytecode_op == BYTECODE_AND) {
+        if(first->type != BYTECODE_TYPE_BOOL || second->type != BYTECODE_TYPE_BOOL) {
+            log_logMessage(FATAL, this->name, "Syntax error in EXPR %u - Boolean Operands expected", bytecode_op);
+            component_cleanUpAndStop(this, NULL);
+        }
+
+        result = TypedObject_construct(BYTECODE_TYPE_BOOL, GC_alloc(sizeof(bool), false));
+        *(bool*)result->object = *(bool*)first->object && *(bool*)second->object;
+    } else if (bytecode_op == BYTECODE_OR) {
+        if(first->type != BYTECODE_TYPE_BOOL || second->type != BYTECODE_TYPE_BOOL) {
+            log_logMessage(FATAL, this->name, "Syntax error in EXPR %u - Boolean Operand expected", bytecode_op);
+            component_cleanUpAndStop(this, NULL);
+        }
+
+        result = TypedObject_construct(BYTECODE_TYPE_BOOL, GC_alloc(sizeof(bool), false));
+        *(bool*)result->object = *(bool*)first->object || *(bool*)second->object;
+    } else if(bytecode_op == BYTECODE_LESS) {
+        if(!TypedObject_isNumber(first) || !TypedObject_isNumber(second)) {
+            log_logMessage(FATAL, this->name, "Syntax error in EXPR %u - Operand Type Mismatched", bytecode_op);
+            component_cleanUpAndStop(this, NULL);
+        }
+
+        double* castFirst = NULL;
+        double* castSecond = NULL;
+
+        if(first->type == BYTECODE_TYPE_REAL) {
+            castFirst = (double*)first->type;
+        } else if(first->type == BYTECODE_TYPE_UNSIGNED_INTEGER) {
+            castFirst = (double *) (unsigned int*)first->type;
+        } else if(first->type == BYTECODE_TYPE_INTEGER) {
+            castFirst = (double *) (int*)first->type;
+        } else if(first->type == BYTECODE_TYPE_BYTE) {
+            castFirst = (double *) (char*)first->type;
+        }
+
+        if(second->type == BYTECODE_TYPE_REAL) {
+            castSecond = (double*)second->type;
+        } else if(second->type == BYTECODE_TYPE_UNSIGNED_INTEGER) {
+            castSecond = (double *) (unsigned int*)second->type;
+        } else if(second->type == BYTECODE_TYPE_INTEGER) {
+            castSecond = (double *) (int*)second->type;
+        } else if(second->type == BYTECODE_TYPE_BYTE) {
+            castSecond = (double *) (char*)second->type;
+        }
+
+        result = TypedObject_construct(BYTECODE_TYPE_BOOL, GC_alloc(sizeof(bool), false));
+        *(bool*)result->object = castFirst < castSecond;
+    } else if(bytecode_op == BYTECODE_LESSEQUAL) {
+        if(!TypedObject_isNumber(first) || !TypedObject_isNumber(second)) {
+            log_logMessage(FATAL, this->name, "Syntax error in EXPR %u - Operand Type Mismatched", bytecode_op);
+            component_cleanUpAndStop(this, NULL);
+        }
+
+        double* castFirst = NULL;
+        double* castSecond = NULL;
+
+        if(first->type == BYTECODE_TYPE_REAL) {
+            castFirst = (double*)first->type;
+        } else if(first->type == BYTECODE_TYPE_UNSIGNED_INTEGER) {
+            castFirst = (double *) (unsigned int*)first->type;
+        } else if(first->type == BYTECODE_TYPE_INTEGER) {
+            castFirst = (double *) (int*)first->type;
+        } else if(first->type == BYTECODE_TYPE_BYTE) {
+            castFirst = (double *) (char*)first->type;
+        }
+
+        if(second->type == BYTECODE_TYPE_REAL) {
+            castSecond = (double*)second->type;
+        } else if(second->type == BYTECODE_TYPE_UNSIGNED_INTEGER) {
+            castSecond = (double *) (unsigned int*)second->type;
+        } else if(second->type == BYTECODE_TYPE_INTEGER) {
+            castSecond = (double *) (int*)second->type;
+        } else if(second->type == BYTECODE_TYPE_BYTE) {
+            castSecond = (double *) (char*)second->type;
+        }
+
+        result = TypedObject_construct(BYTECODE_TYPE_BOOL, GC_alloc(sizeof(bool), false));
+        *(bool*)result->object = castFirst <= castSecond;
+    } else if(bytecode_op == BYTECODE_EQUAL) {
+        if(!TypedObject_isNumber(first) || !TypedObject_isNumber(second)) {
+            log_logMessage(FATAL, this->name, "Syntax error in EXPR %u - Operand Type Mismatched", bytecode_op);
+            component_cleanUpAndStop(this, NULL);
+        }
+
+        double* castFirst = NULL;
+        double* castSecond = NULL;
+
+        if(first->type == BYTECODE_TYPE_REAL) {
+            castFirst = (double*)first->type;
+        } else if(first->type == BYTECODE_TYPE_UNSIGNED_INTEGER) {
+            castFirst = (double *) (unsigned int*)first->type;
+        } else if(first->type == BYTECODE_TYPE_INTEGER) {
+            castFirst = (double *) (int*)first->type;
+        } else if(first->type == BYTECODE_TYPE_BYTE) {
+            castFirst = (double *) (char*)first->type;
+        }
+
+        if(second->type == BYTECODE_TYPE_REAL) {
+            castSecond = (double*)second->type;
+        } else if(second->type == BYTECODE_TYPE_UNSIGNED_INTEGER) {
+            castSecond = (double *) (unsigned int*)second->type;
+        } else if(second->type == BYTECODE_TYPE_INTEGER) {
+            castSecond = (double *) (int*)second->type;
+        } else if(second->type == BYTECODE_TYPE_BYTE) {
+            castSecond = (double *) (char*)second->type;
+        }
+
+
+        result = TypedObject_construct(BYTECODE_TYPE_BOOL, GC_alloc(sizeof(bool), false));
+        *(bool*)result->object = castFirst == castSecond;
+    }
+    else if(bytecode_op == BYTECODE_MOREEQUAL) {
+        if(!TypedObject_isNumber(first) || !TypedObject_isNumber(second)) {
+            log_logMessage(FATAL, this->name, "Syntax error in EXPR %u - Operand Type Mismatched", bytecode_op);
+            component_cleanUpAndStop(this, NULL);
+        }
+
+        double* castFirst = NULL;
+        double* castSecond = NULL;
+
+        if(first->type == BYTECODE_TYPE_REAL) {
+            castFirst = (double*)first->type;
+        } else if(first->type == BYTECODE_TYPE_UNSIGNED_INTEGER) {
+            castFirst = (double *) (unsigned int*)first->type;
+        } else if(first->type == BYTECODE_TYPE_INTEGER) {
+            castFirst = (double *) (int*)first->type;
+        } else if(first->type == BYTECODE_TYPE_BYTE) {
+            castFirst = (double *) (char*)first->type;
+        }
+
+        if(second->type == BYTECODE_TYPE_REAL) {
+            castSecond = (double*)second->type;
+        } else if(second->type == BYTECODE_TYPE_UNSIGNED_INTEGER) {
+            castSecond = (double *) (unsigned int*)second->type;
+        } else if(second->type == BYTECODE_TYPE_INTEGER) {
+            castSecond = (double *) (int*)second->type;
+        } else if(second->type == BYTECODE_TYPE_BYTE) {
+            castSecond = (double *) (char*)second->type;
+        }
+
+
+        result = TypedObject_construct(BYTECODE_TYPE_BOOL, GC_alloc(sizeof(bool), false));
+        *(bool*)result->object = castFirst >= castSecond;
+    } else if(bytecode_op == BYTECODE_MORE) {
+        if(!TypedObject_isNumber(first) || !TypedObject_isNumber(second)) {
+            log_logMessage(FATAL, this->name, "Syntax error in EXPR %u - Operand Type Mismatched", bytecode_op);
+            component_cleanUpAndStop(this, NULL);
+        }
+
+        double* castFirst = NULL;
+        double* castSecond = NULL;
+
+        if(first->type == BYTECODE_TYPE_REAL) {
+            castFirst = (double*)first->type;
+        } else if(first->type == BYTECODE_TYPE_UNSIGNED_INTEGER) {
+            castFirst = (double *) (unsigned int*)first->type;
+        } else if(first->type == BYTECODE_TYPE_INTEGER) {
+            castFirst = (double *) (int*)first->type;
+        } else if(first->type == BYTECODE_TYPE_BYTE) {
+            castFirst = (double *) (char*)first->type;
+        }
+
+        if(second->type == BYTECODE_TYPE_REAL) {
+            castSecond = (double*)second->type;
+        } else if(second->type == BYTECODE_TYPE_UNSIGNED_INTEGER) {
+            castSecond = (double *) (unsigned int*)second->type;
+        } else if(second->type == BYTECODE_TYPE_INTEGER) {
+            castSecond = (double *) (int*)second->type;
+        } else if(second->type == BYTECODE_TYPE_BYTE) {
+            castSecond = (double *) (char*)second->type;
+        }
+
+
+        result = TypedObject_construct(BYTECODE_TYPE_BOOL, GC_alloc(sizeof(bool), false));
+        *(bool*)result->object = castFirst > castSecond;
+    } else if(bytecode_op == BYTECODE_UNEQUAL) {
+        if(!TypedObject_isNumber(first) || !TypedObject_isNumber(second)) {
+            log_logMessage(FATAL, this->name, "Syntax error in EXPR %u - Operand Type Mismatched", bytecode_op);
+            component_cleanUpAndStop(this, NULL);
+        }
+
+        double* castFirst = NULL;
+        double* castSecond = NULL;
+
+        if(first->type == BYTECODE_TYPE_REAL) {
+            castFirst = (double*)first->type;
+        } else if(first->type == BYTECODE_TYPE_UNSIGNED_INTEGER) {
+            castFirst = (double *) (unsigned int*)first->type;
+        } else if(first->type == BYTECODE_TYPE_INTEGER) {
+            castFirst = (double *) (int*)first->type;
+        } else if(first->type == BYTECODE_TYPE_BYTE) {
+            castFirst = (double *) (char*)first->type;
+        }
+
+        if(second->type == BYTECODE_TYPE_REAL) {
+            castSecond = (double*)second->type;
+        } else if(second->type == BYTECODE_TYPE_UNSIGNED_INTEGER) {
+            castSecond = (double *) (unsigned int*)second->type;
+        } else if(second->type == BYTECODE_TYPE_INTEGER) {
+            castSecond = (double *) (int*)second->type;
+        } else if(second->type == BYTECODE_TYPE_BYTE) {
+            castSecond = (double *) (char*)second->type;
+        }
+
+
+        result = TypedObject_construct(BYTECODE_TYPE_BOOL, GC_alloc(sizeof(bool), false));
+        *(bool*)result->object = castFirst != castSecond;
+    }
+
+    Stack_push(this->dataStack, result);
+
+    GC_decRef(second);
+    GC_decRef(first);
 
 }
 
+void component_not(Component_PNTR this) {
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, this->name, "NOT");
+#endif
 
+    if(Stack_size(this->dataStack) == 0) {
+        log_logMessage(FATAL, this->name, "Syntax error in NOT - Not enough data in stack");
+        component_cleanUpAndStop(this, NULL);
+    }
+
+    TypedObject_PNTR first = Stack_pop(this->dataStack);
+    if(first->type != BYTECODE_TYPE_BOOL) {
+        log_logMessage(FATAL, this->name, "Syntax error in NOT - Boolean Operand expected");
+        component_cleanUpAndStop(this, NULL);
+    }
+
+    *((bool*)first->object) = !(*(bool*)first->object);
+    Stack_push(this->dataStack, first);
+}
+
+void component_stop(Component_PNTR this) {
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, this->name, "STOP");
+#endif
+
+    int nextByte;
+    if((nextByte = fgetc(this->sourceFile)) != BYTECODE_TYPE_STRING) {
+        log_logMessage(FATAL, this->name, "Syntax error in STOP - %d", nextByte);
+        component_cleanUpAndStop(this, NULL);
+    } else {
+        char *name = component_readString(this);
+        if(!strcmp(name, "") || !strcmp(name, this->name)) { //INVERT strcmp because 0 = match
+            this->stop = true;
+        } else {
+            TypedObject_PNTR component = ScopeStack_load(this->scopeStack, name);
+            if(component == NULL || component->type != BYTECODE_TYPE_COMPONENT) {
+                log_logMessage(FATAL, this->name, "Component %s could not be found", name, nextByte);
+                component_cleanUpAndStop(this, NULL);
+            }
+            ((Component_PNTR)component->object)->stop = true;
+        }
+        GC_decRef(name);
+    }
+
+}
 
 //------
 
@@ -445,78 +840,78 @@ int component_skipToNext(Component_PNTR this, int bytecode) {
     while( next != bytecode && next != EOF ) {
         switch( next ) {
             case BYTECODE_STOP:
-                component_readString(this);	// COMPONENT_NAME
+                GC_decRef(component_readString(this));	// COMPONENT_NAME
                 break;
             case BYTECODE_PUSH:
-                component_readString(this);	// VALUE
+                GC_decRef(component_readString(this));	// VALUE
                 break;
             case BYTECODE_DECLARE:
-                component_readString(this);				// VARIABLE_NAME
+                GC_decRef(component_readString(this));				// VARIABLE_NAME
                 component_readNBytes(this, 1);	// VARIABLE_TYPE
                 break;
             case BYTECODE_LOAD:
-                component_readString(this);	// VARIABLE_NAME
+                GC_decRef(component_readString(this));	// VARIABLE_NAME
                 break;
             case BYTECODE_STORE:
-                component_readString(this);	// VARIABLE_NAME
+                GC_decRef(component_readString(this));	// VARIABLE_NAME
                 break;
             case BYTECODE_COMPONENT:
-                component_readString(this);									// COMPONENT_NAME
+                GC_decRef(component_readString(this));									// COMPONENT_NAME
                 parameters = fgetc(this->sourceFile);			// NO_OF_INTERFACE
                 for( int i = 0; i < parameters; i++ ) {
                     int channels = fgetc(this->sourceFile);	// NO_OF_CHANNEL
                     for( int j = 0; j < channels; j++ ) {
                         fgetc(this->sourceFile);				// DIRECTION
                         fgetc(this->sourceFile);				// TYPE
-                        component_readString(this);							// CHANNEL_NAME
+                        GC_decRef(component_readString(this));							// CHANNEL_NAME
                     }
                 }
                 break;
             case BYTECODE_CALL:
-                component_readString(this);								// COMPONENT_NAME
+                GC_decRef(component_readString(this));								// COMPONENT_NAME
                 parameters = fgetc(this->sourceFile);		// NUMBER_OF_PARAMETERS
                 for( int i = 0; i < parameters; i++ )
-                    component_readString(this);							// PARAMETER
+                    GC_decRef(component_readString(this));							// PARAMETER
                 break;
             case BYTECODE_CONSTRUCTOR:
                 parameters = fgetc(this->sourceFile);			// NUMBER_OF_PARAMETERS
                 for( int i = 0; i < parameters; i++ ) {
                     fgetc(this->sourceFile);					// TYPE_OF_PARAMETER
-                    component_readString(this);								// NAME_OF_PARAMETER
+                    GC_decRef(component_readString(this));								// NAME_OF_PARAMETER
                 }
                 break;
             case BYTECODE_JUMP:
-                component_readString(this);	// BYTE_JUMP
+                GC_decRef(component_readString(this));	// BYTE_JUMP
                 break;
             case BYTECODE_IF:
-                component_readString(this);	// BYTE_JUMP
+                GC_decRef(component_readString(this));	// BYTE_JUMP
                 break;
             case BYTECODE_ELSE: // Not sure yet if require?
-                component_readString(this);	// BYTE_JUMP
+                GC_decRef(component_readString(this));	// BYTE_JUMP
                 break;
             case BYTECODE_CONNECT:
-                component_readString(this);	// COMPONENT_VARIABLE_NAME
-                component_readString(this);	// CHANNEL_NAME
-                component_readString(this);	// COMPONENT_VARIABLE_NAME
-                component_readString(this);	// CHANNEL_NAME
+                GC_decRef(component_readString(this));	// COMPONENT_VARIABLE_NAME
+                GC_decRef(component_readString(this));	// CHANNEL_NAME
+                GC_decRef(component_readString(this));	// COMPONENT_VARIABLE_NAME
+                GC_decRef(component_readString(this));	// CHANNEL_NAME
                 break;
             case BYTECODE_DISCONNECT:
-                component_readString(this);	// COMPONENT_VARIABLE_NAME
-                component_readString(this);	// CHANNEL_NAME
+                GC_decRef(component_readString(this));	// COMPONENT_VARIABLE_NAME
+                GC_decRef(component_readString(this));	// CHANNEL_NAME
                 break;
             case BYTECODE_SEND:
-                component_readString(this);	// CHANNEL_NAME
+                GC_decRef(component_readString(this));	// CHANNEL_NAME
                 break;
             case BYTECODE_RECEIVE:
-                component_readString(this);	// CHANNEL_NAME
+                GC_decRef(component_readString(this));	// CHANNEL_NAME
                 break;
-//			default:
+			default:
 //				ENTERSCOPE, EXITESCOPE,
 //				ADD, SUB, MUL, DIV, MOD,
 //				LESS, LESSEQUAL, MORE, MOREEQUAL, EQUAL, UNEQUAL,
 //				AND, OR, NOT,
 //				BITAND, BITOR, BITXOR, BITNOT
-//				break;
+				break;
         }
         next = fgetc(this->sourceFile);
     }
@@ -529,7 +924,18 @@ static void Component_decRef(Component_PNTR this) {
 #ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, this->name, "Decrementing reference to component");
 #endif
+    log_logMessage(DEBUG, this->name, "   Cleaning Wait Components [1/5]");
+    if(this->waitComponents != NULL) {
+        GC_decRef(this->waitComponents);
+    }
+    log_logMessage(DEBUG, this->name, "   Cleaning Parameters [2/5]");
+    if(this->parameters != NULL) {
+        GC_decRef(this->parameters);
+    }
+    log_logMessage(DEBUG, this->name, "   Cleaning Scope Stack [3/5]");
     GC_decRef(this->scopeStack);
+    log_logMessage(DEBUG, this->name, "   Cleaning Data Stack [4/5]");
     GC_decRef(this->dataStack);
+    log_logMessage(DEBUG, this->name, "   Cleaning Name [5/5]");
     GC_decRef(this->name);
 }

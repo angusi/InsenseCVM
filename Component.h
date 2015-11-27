@@ -46,6 +46,7 @@ struct Component {
     ScopeStack_PNTR scopeStack;
     Stack_PNTR dataStack;
     Stack_PNTR waitComponents;
+    bool stop;
 };
 
 Component_PNTR component_newComponent(char *sourceFile, IteratedList_PNTR params, int paramCount);
@@ -53,6 +54,7 @@ void* component_run(void* this);
 char* component_getName(Component_PNTR this);
 
 //TODO: Should these be declared at head of C file instead of in H file?
+void component_cleanUpAndStop(Component_PNTR this, void* __retval);
 void component_enterScope(Component_PNTR this);
 void component_exitScope(Component_PNTR this);
 char* component_readString(Component_PNTR this);
@@ -65,6 +67,8 @@ void component_load(Component_PNTR this);
 void component_component(Component_PNTR this);
 void component_push(Component_PNTR this);
 int component_skipToNext(Component_PNTR this, int bytecode);
-void component_expression(Component_PNTR this, unsigned int bytecode_op);
+void component_expression(Component_PNTR this, int bytecode_op);
+void component_not(Component_PNTR this);
+void component_stop(Component_PNTR this);
 
 #endif //CVM_COMPONENT_H

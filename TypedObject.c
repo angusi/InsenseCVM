@@ -24,6 +24,7 @@
  */
 
 #include "TypedObject.h"
+#include "BytecodeTable.h"
 
 static void TypedObject_decRef(TypedObject_PNTR pntr);
 
@@ -37,4 +38,10 @@ TypedObject_PNTR TypedObject_construct(unsigned int type, void* object) {
 
 void TypedObject_decRef(TypedObject_PNTR this) {
     GC_decRef(this->object);
+}
+
+bool TypedObject_isNumber(TypedObject_PNTR this) {
+    return this->type == BYTECODE_TYPE_INTEGER || this->type == BYTECODE_TYPE_REAL ||
+                                                  this->type == BYTECODE_TYPE_BYTE ||
+                                                  this->type == BYTECODE_TYPE_UNSIGNED_INTEGER;
 }

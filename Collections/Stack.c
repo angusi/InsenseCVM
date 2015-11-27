@@ -99,7 +99,7 @@ void Stack_clear(Stack_PNTR this) {
     log_logMessage(DEBUG, "Stack", "Clearing stack at %p", this);
 #endif
     while(this->stackTop > 0) {
-        Stack_pop(this);
+        GC_decRef(Stack_pop(this));
     }
 }
 
@@ -116,6 +116,7 @@ static void Stack_decRef(Stack_PNTR this){
     if(!this->stackTop == 0) {
         Stack_clear(this); // forces decRef on IteratedList content (node payload)
     }
+    GC_decRef(this->storage);
 }
 
 static void StackEntry_decRef(StackEntry_PNTR this) {
