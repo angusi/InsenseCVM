@@ -123,6 +123,18 @@ void* component_run(void* component) {
             case BYTECODE_STOP:
                 component_stop(this);
                 break;
+            case BYTECODE_BEHAVIOUR_JUMP:
+                component_behaviourJump(this);
+                break;
+            case BYTECODE_JUMP:
+                component_jump(this);
+                break;
+            case BYTECODE_IF:
+                component_ifClause(this);
+                break;
+            case BYTECODE_ELSE:
+                component_elseClause(this);
+                break;
             default:
                 log_logMessage(ERROR, this->name, "Unknown Byte Read - %u", nextByte);
                 break;
@@ -376,32 +388,12 @@ void component_push(Component_PNTR this) {
     log_logMessage(DEBUG, this->name, "PUSH");
 #endif
 
-    int type = fgetc(this->sourceFile);
-    char* string; //In case we have a string
-    switch(type) {
-        case BYTECODE_TYPE_INTEGER:
-            Stack_push(this->dataStack, TypedObject_construct(BYTECODE_TYPE_INTEGER, component_readNBytes(this, 4)));
-            break;
-        case BYTECODE_TYPE_UNSIGNED_INTEGER:
-            Stack_push(this->dataStack, TypedObject_construct(BYTECODE_TYPE_UNSIGNED_INTEGER, component_readNBytes(this, 4)));
-            break;
-        case BYTECODE_TYPE_REAL:
-            Stack_push(this->dataStack, TypedObject_construct(BYTECODE_TYPE_REAL, component_readNBytes(this, 8)));
-            break;
-        case BYTECODE_TYPE_BOOL:
-            Stack_push(this->dataStack, TypedObject_construct(BYTECODE_TYPE_BOOL, component_readNBytes(this, 1)));
-            break;
-        case BYTECODE_TYPE_BYTE:
-            Stack_push(this->dataStack, TypedObject_construct(BYTECODE_TYPE_BYTE, component_readNBytes(this, 1)));
-            break;
-        case BYTECODE_TYPE_STRING:
-            string = component_readString(this);
-            Stack_push(this->dataStack, TypedObject_construct(BYTECODE_TYPE_STRING, string));
-            GC_decRef(string);
-            break;
-        default:
-            log_logMessage(ERROR, this->name, "Unrecognised type - %d", type);
+    void* data = component_readData(this);
+    if(data == NULL) {
+        log_logMessage(FATAL, this->name, "Tried to push data onto stack, but no data could be read.");
+        component_cleanUpAndStop(this, NULL);
     }
+    Stack_push(this->dataStack, data);
 }
 
 
@@ -794,6 +786,81 @@ void component_stop(Component_PNTR this) {
 
 }
 
+void component_behaviourJump(Component_PNTR this) {
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, this->name, "BEHAVIOUR JUMP");
+#endif
+
+    if(this->stop) {
+        GC_decRef(component_readData(this));
+    } else {
+        component_jump(this);
+    }
+}
+
+void component_jump(Component_PNTR this) {
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, this->name, "JUMP");
+#endif
+
+    TypedObject_PNTR jumpSize = component_readData(this);
+    if(jumpSize->type != BYTECODE_TYPE_INTEGER) {
+        log_logMessage(FATAL, this->name, "Syntax error - jump must be followed by distance.");
+        component_cleanUpAndStop(this, NULL);
+    }
+
+    fseek(this->sourceFile, *(int*)jumpSize->object*-1, SEEK_CUR);
+}
+
+void component_ifClause(Component_PNTR this) {
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, this->name, "IF");
+#endif
+
+    TypedObject_PNTR jumpSize = component_readData(this);
+    if(jumpSize->type != BYTECODE_TYPE_INTEGER) {
+        log_logMessage(FATAL, this->name, "Syntax error - if must be followed by skip distance.");
+        component_cleanUpAndStop(this, NULL);
+    }
+
+    TypedObject_PNTR condition = Stack_pop(this->dataStack);
+    if(condition->type != BYTECODE_TYPE_BOOL) {
+        log_logMessage(FATAL, this->name, "Boolean type expected for if condition.");
+        component_cleanUpAndStop(this, NULL);
+    }
+
+    if(*(bool*)condition->object == false) {
+#ifdef DEBUGGINGENABLED
+        log_logMessage(DEBUG, this->name, "IF was FALSE, skipping %d bytes", *(int*)jumpSize->object);
+#endif
+        fseek(this->sourceFile, *(int*)jumpSize->object, SEEK_CUR);
+        if(fgetc(this->sourceFile) == BYTECODE_ELSE) {
+            //Consume the else-jump so that the next byte is the else code.
+            component_readData(this);
+        } else {
+            //Replace the byte we just read, as it's not an else next.
+            fseek(this->sourceFile, -1, SEEK_CUR);
+        }
+    } else {
+#ifdef DEBUGGINGENABLED
+        log_logMessage(DEBUG, this->name, "IF was TRUE");
+#endif
+    }
+}
+
+void component_elseClause(Component_PNTR this) {
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, this->name, "ELSE");
+#endif
+    TypedObject_PNTR jumpSize = component_readData(this);
+    if(jumpSize->type != BYTECODE_TYPE_INTEGER) {
+        log_logMessage(FATAL, this->name, "Syntax error - else must be followed by skip distance.");
+        component_cleanUpAndStop(this, NULL);
+    }
+
+    fseek(this->sourceFile, *(int*)jumpSize->object, SEEK_CUR);
+}
+
 //------
 
 char* component_getName(Component_PNTR this) {
@@ -823,6 +890,27 @@ char* component_readString(Component_PNTR this) {
     string[numChars] = '\0';
 
     return string;
+}
+
+TypedObject_PNTR component_readData(Component_PNTR this) {
+    int type = fgetc(this->sourceFile);
+    switch(type) {
+        case BYTECODE_TYPE_INTEGER:
+            return TypedObject_construct(BYTECODE_TYPE_INTEGER, component_readNBytes(this, 4));
+        case BYTECODE_TYPE_UNSIGNED_INTEGER:
+            return TypedObject_construct(BYTECODE_TYPE_UNSIGNED_INTEGER, component_readNBytes(this, 4));
+        case BYTECODE_TYPE_REAL:
+            return TypedObject_construct(BYTECODE_TYPE_REAL, component_readNBytes(this, 8));
+        case BYTECODE_TYPE_BOOL:
+            return TypedObject_construct(BYTECODE_TYPE_BOOL, component_readNBytes(this, 1));
+        case BYTECODE_TYPE_BYTE:
+            return TypedObject_construct(BYTECODE_TYPE_BYTE, component_readNBytes(this, 1));
+        case BYTECODE_TYPE_STRING:
+            return TypedObject_construct(BYTECODE_TYPE_STRING, component_readString(this));
+        default:
+            log_logMessage(ERROR, this->name, "Unrecognised type - %d", type);
+            return NULL;
+    }
 }
 
 void* component_readNBytes(Component_PNTR this, size_t nBytes) {

@@ -35,6 +35,7 @@
 #include "Logger/Logger.h"
 #include "Collections/Stack.h"
 #include "ScopeStack/ScopeStack.h"
+#include "TypedObject.h"
 
 typedef struct Component Component_s, *Component_PNTR;
 struct Component {
@@ -57,6 +58,7 @@ char* component_getName(Component_PNTR this);
 void component_cleanUpAndStop(Component_PNTR this, void* __retval);
 void component_enterScope(Component_PNTR this);
 void component_exitScope(Component_PNTR this);
+TypedObject_PNTR component_readData(Component_PNTR this);
 char* component_readString(Component_PNTR this);
 void* component_readNBytes(Component_PNTR this, size_t nBytes);
 Component_PNTR component_call(Component_PNTR this);
@@ -67,8 +69,12 @@ void component_load(Component_PNTR this);
 void component_component(Component_PNTR this);
 void component_push(Component_PNTR this);
 int component_skipToNext(Component_PNTR this, int bytecode);
+void component_jump(Component_PNTR this);
+void component_behaviourJump(Component_PNTR this);
 void component_expression(Component_PNTR this, int bytecode_op);
 void component_not(Component_PNTR this);
 void component_stop(Component_PNTR this);
+void component_ifClause(Component_PNTR this);
+void component_elseClause(Component_PNTR this);
 
 #endif //CVM_COMPONENT_H

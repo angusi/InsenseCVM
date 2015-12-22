@@ -41,7 +41,8 @@ void TypedObject_decRef(TypedObject_PNTR this) {
 }
 
 bool TypedObject_isNumber(TypedObject_PNTR this) {
-    return this->type == BYTECODE_TYPE_INTEGER || this->type == BYTECODE_TYPE_REAL ||
-                                                  this->type == BYTECODE_TYPE_BYTE ||
-                                                  this->type == BYTECODE_TYPE_UNSIGNED_INTEGER;
+    return this->type == BYTECODE_TYPE_INTEGER ||
+           this->type == BYTECODE_TYPE_REAL ||
+           this->type == BYTECODE_TYPE_BYTE ||
+           this->type == BYTECODE_TYPE_UNSIGNED_INTEGER;
 }
