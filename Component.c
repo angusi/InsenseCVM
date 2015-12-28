@@ -28,7 +28,6 @@
 #include "Component.h"
 #include "BytecodeTable.h"
 #include "Main.h"
-#include "TypedObject.h"
 
 static void Component_decRef(Component_PNTR pntr);
 
@@ -433,7 +432,9 @@ void component_expression(Component_PNTR this, int bytecode_op) {
     TypedObject_PNTR result = NULL;
 
     if(bytecode_op == BYTECODE_ADD) {
-
+#ifdef DEBUGGINGENABLED
+        log_logMessage(DEBUG, this->name, "    ADD");
+#endif
         if(!TypedObject_isNumber(first) || !TypedObject_isNumber(second)) {
             log_logMessage(FATAL, this->name, "Syntax error in EXPR %u - Operand Type Mismatched", bytecode_op);
             component_cleanUpAndStop(this, NULL);
@@ -452,6 +453,9 @@ void component_expression(Component_PNTR this, int bytecode_op) {
             *(char*)result->object = *(char*)first->object + *(char*)second->object;
         }
     } else if(bytecode_op == BYTECODE_SUB) {
+#ifdef DEBUGGINGENABLED
+        log_logMessage(DEBUG, this->name, "    SUB");
+#endif
         if(!TypedObject_isNumber(first) || !TypedObject_isNumber(second)) {
             log_logMessage(FATAL, this->name, "Syntax error in EXPR %u - Operand Type Mismatched", bytecode_op);
             component_cleanUpAndStop(this, NULL);
@@ -470,6 +474,9 @@ void component_expression(Component_PNTR this, int bytecode_op) {
             *(char*)result->object = *(char*)first->object - *(char*)second->object;
         }
     } else if(bytecode_op == BYTECODE_MUL) {
+#ifdef DEBUGGINGENABLED
+        log_logMessage(DEBUG, this->name, "    MUL");
+#endif
         if(!TypedObject_isNumber(first) || !TypedObject_isNumber(second)) {
             log_logMessage(FATAL, this->name, "Syntax error in EXPR %u - Operand Type Mismatched", bytecode_op);
             component_cleanUpAndStop(this, NULL);
@@ -488,6 +495,9 @@ void component_expression(Component_PNTR this, int bytecode_op) {
             *(char*)result->object = *(char*)first->object * *(char*)second->object;
         }
     } else if(bytecode_op == BYTECODE_DIV) {
+#ifdef DEBUGGINGENABLED
+        log_logMessage(DEBUG, this->name, "    DIV");
+#endif
         if(!TypedObject_isNumber(first) || !TypedObject_isNumber(second)) {
             log_logMessage(FATAL, this->name, "Syntax error in EXPR %u - Operand Type Mismatched", bytecode_op);
             component_cleanUpAndStop(this, NULL);
@@ -506,6 +516,9 @@ void component_expression(Component_PNTR this, int bytecode_op) {
             *(char*)result->object = *(char*)first->object / *(char*)second->object;
         }
     } else if(bytecode_op == BYTECODE_MOD) {
+#ifdef DEBUGGINGENABLED
+        log_logMessage(DEBUG, this->name, "    MOD");
+#endif
         if(!TypedObject_isNumber(first) || !TypedObject_isNumber(second)) {
             log_logMessage(FATAL, this->name, "Syntax error in EXPR %u - Operand Type Mismatched", bytecode_op);
             component_cleanUpAndStop(this, NULL);
@@ -525,6 +538,9 @@ void component_expression(Component_PNTR this, int bytecode_op) {
             *(char*)result->object = *(char*)first->object % *(char*)second->object;
         }
     } else if(bytecode_op == BYTECODE_AND) {
+#ifdef DEBUGGINGENABLED
+        log_logMessage(DEBUG, this->name, "    AND");
+#endif
         if(first->type != BYTECODE_TYPE_BOOL || second->type != BYTECODE_TYPE_BOOL) {
             log_logMessage(FATAL, this->name, "Syntax error in EXPR %u - Boolean Operands expected", bytecode_op);
             component_cleanUpAndStop(this, NULL);
@@ -533,6 +549,9 @@ void component_expression(Component_PNTR this, int bytecode_op) {
         result = TypedObject_construct(BYTECODE_TYPE_BOOL, GC_alloc(sizeof(bool), false));
         *(bool*)result->object = *(bool*)first->object && *(bool*)second->object;
     } else if (bytecode_op == BYTECODE_OR) {
+#ifdef DEBUGGINGENABLED
+        log_logMessage(DEBUG, this->name, "    OE");
+#endif
         if(first->type != BYTECODE_TYPE_BOOL || second->type != BYTECODE_TYPE_BOOL) {
             log_logMessage(FATAL, this->name, "Syntax error in EXPR %u - Boolean Operand expected", bytecode_op);
             component_cleanUpAndStop(this, NULL);
@@ -541,191 +560,210 @@ void component_expression(Component_PNTR this, int bytecode_op) {
         result = TypedObject_construct(BYTECODE_TYPE_BOOL, GC_alloc(sizeof(bool), false));
         *(bool*)result->object = *(bool*)first->object || *(bool*)second->object;
     } else if(bytecode_op == BYTECODE_LESS) {
+#ifdef DEBUGGINGENABLED
+        log_logMessage(DEBUG, this->name, "    LESS");
+#endif
         if(!TypedObject_isNumber(first) || !TypedObject_isNumber(second)) {
             log_logMessage(FATAL, this->name, "Syntax error in EXPR %u - Operand Type Mismatched", bytecode_op);
             component_cleanUpAndStop(this, NULL);
         }
 
-        double* castFirst = NULL;
-        double* castSecond = NULL;
+        double castFirst = 0;
+        double castSecond = 0;
 
         if(first->type == BYTECODE_TYPE_REAL) {
-            castFirst = (double*)first->type;
+            castFirst = *(double*)first->object;
         } else if(first->type == BYTECODE_TYPE_UNSIGNED_INTEGER) {
-            castFirst = (double *) (unsigned int*)first->type;
+            castFirst = (double)*(unsigned int*)first->object;
         } else if(first->type == BYTECODE_TYPE_INTEGER) {
-            castFirst = (double *) (int*)first->type;
+            castFirst = (double)*(int*)first->object;
         } else if(first->type == BYTECODE_TYPE_BYTE) {
-            castFirst = (double *) (char*)first->type;
+            castFirst = (double)*(char*)first->object;
         }
 
         if(second->type == BYTECODE_TYPE_REAL) {
-            castSecond = (double*)second->type;
+            castSecond = *(double*)second->object;
         } else if(second->type == BYTECODE_TYPE_UNSIGNED_INTEGER) {
-            castSecond = (double *) (unsigned int*)second->type;
+            castSecond = (double)*(unsigned int*)second->object;
         } else if(second->type == BYTECODE_TYPE_INTEGER) {
-            castSecond = (double *) (int*)second->type;
+            castSecond = (double)*(int*)second->object;
         } else if(second->type == BYTECODE_TYPE_BYTE) {
-            castSecond = (double *) (char*)second->type;
+            castSecond = (double)*(char*)second->object;
         }
 
         result = TypedObject_construct(BYTECODE_TYPE_BOOL, GC_alloc(sizeof(bool), false));
         *(bool*)result->object = castFirst < castSecond;
     } else if(bytecode_op == BYTECODE_LESSEQUAL) {
+#ifdef DEBUGGINGENABLED
+        log_logMessage(DEBUG, this->name, "    LESSEQUAL");
+#endif
         if(!TypedObject_isNumber(first) || !TypedObject_isNumber(second)) {
             log_logMessage(FATAL, this->name, "Syntax error in EXPR %u - Operand Type Mismatched", bytecode_op);
             component_cleanUpAndStop(this, NULL);
         }
 
-        double* castFirst = NULL;
-        double* castSecond = NULL;
+        double castFirst = 0;
+        double castSecond = 0;
 
         if(first->type == BYTECODE_TYPE_REAL) {
-            castFirst = (double*)first->type;
+            castFirst = *(double*)first->object;
         } else if(first->type == BYTECODE_TYPE_UNSIGNED_INTEGER) {
-            castFirst = (double *) (unsigned int*)first->type;
+            castFirst = (double)*(unsigned int*)first->object;
         } else if(first->type == BYTECODE_TYPE_INTEGER) {
-            castFirst = (double *) (int*)first->type;
+            castFirst = (double)*(int*)first->object;
         } else if(first->type == BYTECODE_TYPE_BYTE) {
-            castFirst = (double *) (char*)first->type;
+            castFirst = (double)*(char*)first->object;
         }
 
         if(second->type == BYTECODE_TYPE_REAL) {
-            castSecond = (double*)second->type;
+            castSecond = *(double*)second->object;
         } else if(second->type == BYTECODE_TYPE_UNSIGNED_INTEGER) {
-            castSecond = (double *) (unsigned int*)second->type;
+            castSecond = (double)*(unsigned int*)second->object;
         } else if(second->type == BYTECODE_TYPE_INTEGER) {
-            castSecond = (double *) (int*)second->type;
+            castSecond = (double)*(int*)second->object;
         } else if(second->type == BYTECODE_TYPE_BYTE) {
-            castSecond = (double *) (char*)second->type;
+            castSecond = (double)*(char*)second->object;
         }
 
         result = TypedObject_construct(BYTECODE_TYPE_BOOL, GC_alloc(sizeof(bool), false));
         *(bool*)result->object = castFirst <= castSecond;
     } else if(bytecode_op == BYTECODE_EQUAL) {
+#ifdef DEBUGGINGENABLED
+        log_logMessage(DEBUG, this->name, "    EQUAL");
+#endif
         if(!TypedObject_isNumber(first) || !TypedObject_isNumber(second)) {
             log_logMessage(FATAL, this->name, "Syntax error in EXPR %u - Operand Type Mismatched", bytecode_op);
             component_cleanUpAndStop(this, NULL);
         }
 
-        double* castFirst = NULL;
-        double* castSecond = NULL;
+        double castFirst = 0;
+        double castSecond = 0;
 
         if(first->type == BYTECODE_TYPE_REAL) {
-            castFirst = (double*)first->type;
+            castFirst = *(double*)first->object;
         } else if(first->type == BYTECODE_TYPE_UNSIGNED_INTEGER) {
-            castFirst = (double *) (unsigned int*)first->type;
+            castFirst = (double)*(unsigned int*)first->object;
         } else if(first->type == BYTECODE_TYPE_INTEGER) {
-            castFirst = (double *) (int*)first->type;
+            castFirst = (double)*(int*)first->object;
         } else if(first->type == BYTECODE_TYPE_BYTE) {
-            castFirst = (double *) (char*)first->type;
+            castFirst = (double)*(char*)first->object;
         }
 
         if(second->type == BYTECODE_TYPE_REAL) {
-            castSecond = (double*)second->type;
+            castSecond = *(double*)second->object;
         } else if(second->type == BYTECODE_TYPE_UNSIGNED_INTEGER) {
-            castSecond = (double *) (unsigned int*)second->type;
+            castSecond = (double)*(unsigned int*)second->object;
         } else if(second->type == BYTECODE_TYPE_INTEGER) {
-            castSecond = (double *) (int*)second->type;
+            castSecond = (double)*(int*)second->object;
         } else if(second->type == BYTECODE_TYPE_BYTE) {
-            castSecond = (double *) (char*)second->type;
+            castSecond = (double)*(char*)second->object;
         }
 
 
         result = TypedObject_construct(BYTECODE_TYPE_BOOL, GC_alloc(sizeof(bool), false));
+        log_logMessage(DEBUG, this->name, "    Comparing %f with %f", castFirst, castSecond);
         *(bool*)result->object = castFirst == castSecond;
     }
     else if(bytecode_op == BYTECODE_MOREEQUAL) {
+#ifdef DEBUGGINGENABLED
+        log_logMessage(DEBUG, this->name, "    MOREEQUAL");
+#endif
         if(!TypedObject_isNumber(first) || !TypedObject_isNumber(second)) {
             log_logMessage(FATAL, this->name, "Syntax error in EXPR %u - Operand Type Mismatched", bytecode_op);
             component_cleanUpAndStop(this, NULL);
         }
 
-        double* castFirst = NULL;
-        double* castSecond = NULL;
+        double castFirst = 0;
+        double castSecond = 0;
 
         if(first->type == BYTECODE_TYPE_REAL) {
-            castFirst = (double*)first->type;
+            castFirst = *(double*)first->object;
         } else if(first->type == BYTECODE_TYPE_UNSIGNED_INTEGER) {
-            castFirst = (double *) (unsigned int*)first->type;
+            castFirst = (double)*(unsigned int*)first->object;
         } else if(first->type == BYTECODE_TYPE_INTEGER) {
-            castFirst = (double *) (int*)first->type;
+            castFirst = (double)*(int*)first->object;
         } else if(first->type == BYTECODE_TYPE_BYTE) {
-            castFirst = (double *) (char*)first->type;
+            castFirst = (double)*(char*)first->object;
         }
 
         if(second->type == BYTECODE_TYPE_REAL) {
-            castSecond = (double*)second->type;
+            castSecond = *(double*)second->object;
         } else if(second->type == BYTECODE_TYPE_UNSIGNED_INTEGER) {
-            castSecond = (double *) (unsigned int*)second->type;
+            castSecond = (double)*(unsigned int*)second->object;
         } else if(second->type == BYTECODE_TYPE_INTEGER) {
-            castSecond = (double *) (int*)second->type;
+            castSecond = (double)*(int*)second->object;
         } else if(second->type == BYTECODE_TYPE_BYTE) {
-            castSecond = (double *) (char*)second->type;
+            castSecond = (double)*(char*)second->object;
         }
 
 
         result = TypedObject_construct(BYTECODE_TYPE_BOOL, GC_alloc(sizeof(bool), false));
         *(bool*)result->object = castFirst >= castSecond;
     } else if(bytecode_op == BYTECODE_MORE) {
+#ifdef DEBUGGINGENABLED
+        log_logMessage(DEBUG, this->name, "    MORE");
+#endif
         if(!TypedObject_isNumber(first) || !TypedObject_isNumber(second)) {
             log_logMessage(FATAL, this->name, "Syntax error in EXPR %u - Operand Type Mismatched", bytecode_op);
             component_cleanUpAndStop(this, NULL);
         }
 
-        double* castFirst = NULL;
-        double* castSecond = NULL;
+        double castFirst = 0;
+        double castSecond = 0;
 
         if(first->type == BYTECODE_TYPE_REAL) {
-            castFirst = (double*)first->type;
+            castFirst = *(double*)first->object;
         } else if(first->type == BYTECODE_TYPE_UNSIGNED_INTEGER) {
-            castFirst = (double *) (unsigned int*)first->type;
+            castFirst = (double)*(unsigned int*)first->object;
         } else if(first->type == BYTECODE_TYPE_INTEGER) {
-            castFirst = (double *) (int*)first->type;
+            castFirst = (double)*(int*)first->object;
         } else if(first->type == BYTECODE_TYPE_BYTE) {
-            castFirst = (double *) (char*)first->type;
+            castFirst = (double)*(char*)first->object;
         }
 
         if(second->type == BYTECODE_TYPE_REAL) {
-            castSecond = (double*)second->type;
+            castSecond = *(double*)second->object;
         } else if(second->type == BYTECODE_TYPE_UNSIGNED_INTEGER) {
-            castSecond = (double *) (unsigned int*)second->type;
+            castSecond = (double)*(unsigned int*)second->object;
         } else if(second->type == BYTECODE_TYPE_INTEGER) {
-            castSecond = (double *) (int*)second->type;
+            castSecond = (double)*(int*)second->object;
         } else if(second->type == BYTECODE_TYPE_BYTE) {
-            castSecond = (double *) (char*)second->type;
+            castSecond = (double)*(char*)second->object;
         }
 
 
         result = TypedObject_construct(BYTECODE_TYPE_BOOL, GC_alloc(sizeof(bool), false));
         *(bool*)result->object = castFirst > castSecond;
     } else if(bytecode_op == BYTECODE_UNEQUAL) {
+#ifdef DEBUGGINGENABLED
+        log_logMessage(DEBUG, this->name, "    UNEQUAL");
+#endif
         if(!TypedObject_isNumber(first) || !TypedObject_isNumber(second)) {
             log_logMessage(FATAL, this->name, "Syntax error in EXPR %u - Operand Type Mismatched", bytecode_op);
             component_cleanUpAndStop(this, NULL);
         }
 
-        double* castFirst = NULL;
-        double* castSecond = NULL;
+        double castFirst = 0;
+        double castSecond = 0;
 
         if(first->type == BYTECODE_TYPE_REAL) {
-            castFirst = (double*)first->type;
+            castFirst = *(double*)first->object;
         } else if(first->type == BYTECODE_TYPE_UNSIGNED_INTEGER) {
-            castFirst = (double *) (unsigned int*)first->type;
+            castFirst = (double)*(unsigned int*)first->object;
         } else if(first->type == BYTECODE_TYPE_INTEGER) {
-            castFirst = (double *) (int*)first->type;
+            castFirst = (double)*(int*)first->object;
         } else if(first->type == BYTECODE_TYPE_BYTE) {
-            castFirst = (double *) (char*)first->type;
+            castFirst = (double)*(char*)first->object;
         }
 
         if(second->type == BYTECODE_TYPE_REAL) {
-            castSecond = (double*)second->type;
+            castSecond = *(double*)second->object;
         } else if(second->type == BYTECODE_TYPE_UNSIGNED_INTEGER) {
-            castSecond = (double *) (unsigned int*)second->type;
+            castSecond = (double)*(unsigned int*)second->object;
         } else if(second->type == BYTECODE_TYPE_INTEGER) {
-            castSecond = (double *) (int*)second->type;
+            castSecond = (double)*(int*)second->object;
         } else if(second->type == BYTECODE_TYPE_BYTE) {
-            castSecond = (double *) (char*)second->type;
+            castSecond = (double)*(char*)second->object;
         }
 
 
@@ -733,6 +771,9 @@ void component_expression(Component_PNTR this, int bytecode_op) {
         *(bool*)result->object = castFirst != castSecond;
     }
 
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, this->name, "    Result is %s", *(bool*)result->object ? "TRUE" : "FALSE");
+#endif
     Stack_push(this->dataStack, result);
 
     GC_decRef(second);
@@ -915,9 +956,9 @@ TypedObject_PNTR component_readData(Component_PNTR this) {
 
 void* component_readNBytes(Component_PNTR this, size_t nBytes) {
     char* result = GC_alloc(nBytes, false);
-    for(unsigned int i = 0; i < nBytes; i++) {
+    for(unsigned int i = 1; i <= nBytes; i++) {
         int nextChar = fgetc(this->sourceFile);
-        result[i] = (char)nextChar;
+        result[nBytes-i] = (char)nextChar;
     }
     return result;
 }

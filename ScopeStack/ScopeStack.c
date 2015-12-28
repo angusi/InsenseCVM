@@ -25,6 +25,7 @@
  */
 
 #include "ScopeStack.h"
+#include "../Logger/Logger.h"
 
 
 ScopeStack_PNTR ScopeStack_enterScope(ScopeStack_PNTR this) {
@@ -52,13 +53,22 @@ int ScopeStack_size(ScopeStack_PNTR this) {
 
 
 void ScopeStack_declare(ScopeStack_PNTR this, char *name) {
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, "ScopeStack", "Declaring %s in Scope Stack %p", name, this);
+#endif
     return ListMap_declare(this, name);
 }
 
 void* ScopeStack_load(ScopeStack_PNTR this, char *name) {
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, "ScopeStack", "Loading %s from Scope Stack %p", name, this);
+#endif
     return ListMap_get(this, name);
 }
 
 void ScopeStack_store(ScopeStack_PNTR this, char *name, void *value) {
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, "ScopeStack", "Store %p as %s in Scope Stack %p", value, name, this);
+#endif
     return ListMap_put(this, name, value);
 }

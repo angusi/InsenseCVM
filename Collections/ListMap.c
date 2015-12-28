@@ -76,9 +76,13 @@ void ListMap_put(ListMap_PNTR hashList, char *key, void *value) {
     ListMapEntry_PNTR varElement = NULL;
     IteratedListNode_PNTR currentStackEntry = hashList->first;
 
-    for(int i = 0; i < IteratedList_getListLength(hashList); i++) {
-        if((varElement = IteratedList_searchList(currentStackEntry->payload, HashList_isDesiredElement, key)) != NULL) {
-            break;
+    for(unsigned int i = 0; i < IteratedList_getListLength(hashList); i++) {
+        if(IteratedList_getListLength(currentStackEntry->payload) != 0) {
+            if ((varElement = IteratedList_searchList(currentStackEntry->payload, HashList_isDesiredElement, key)) != NULL) {
+                break;
+            } else {
+                currentStackEntry = currentStackEntry->tail;
+            }
         } else {
             currentStackEntry = currentStackEntry->tail;
         }

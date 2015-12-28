@@ -32,6 +32,8 @@
 
 bool testConstructor();
 bool testDeclareStoreLoad();
+bool testMultipleItems();
+bool testOverwriteValue();
 
 int main(int argc, char* argv[]) {
 
@@ -49,6 +51,12 @@ int main(int argc, char* argv[]) {
     else failed++;
 
     if(testDeclareStoreLoad()) passed++;
+    else failed++;
+
+    if(testMultipleItems()) passed++;
+    else failed++;
+
+    if(testOverwriteValue()) passed++;
     else failed++;
 
 
@@ -119,6 +127,85 @@ bool testDeclareStoreLoad() {
         printf(ANSI_COLOR_GREEN "Test passed - SCOPE STACK DECLARE STORE LOAD" ANSI_COLOR_RESET "\n");
     } else {
         printf(ANSI_COLOR_RED "Test failed - SCOPE STACK DECLARE STORE LOAD" ANSI_COLOR_RESET "\n");
+    }
+
+    ScopeStack_exitScope(scopeStack);
+
+    return result;
+}
+
+bool testMultipleItems() {
+    bool result;
+
+    ScopeStack_PNTR scopeStack = ScopeStack_enterScope(NULL);
+    ScopeStack_declare(scopeStack, "test1");
+    ScopeStack_declare(scopeStack, "test2");
+
+    int* value = GC_alloc(sizeof(int), false);
+    *value = 42;
+    ScopeStack_store(scopeStack, "test1", value);
+
+    int* value2 = GC_alloc(sizeof(int), false);
+    *value2 = 13;
+    ScopeStack_store(scopeStack, "test2", value2);
+
+    int* loadedValue = ScopeStack_load(scopeStack, "test1");
+    if(*loadedValue == 42) {
+        result = true;
+    } else {
+        result = false;
+    }
+
+    int* loadedValue2 = ScopeStack_load(scopeStack, "test2");
+    if(*loadedValue2 == 13) {
+        result &= true;
+    } else {
+        result &= false;
+    }
+
+    if(result) {
+        printf(ANSI_COLOR_GREEN "Test passed - SCOPE STACK MULTIPLE ITEMS" ANSI_COLOR_RESET "\n");
+    } else {
+        printf(ANSI_COLOR_RED "Test failed - SCOPE STACK MULTIPLE ITEMS" ANSI_COLOR_RESET "\n");
+    }
+
+    ScopeStack_exitScope(scopeStack);
+
+    return result;
+}
+
+bool testOverwriteValue() {
+    bool result;
+
+    ScopeStack_PNTR scopeStack = ScopeStack_enterScope(NULL);
+    ScopeStack_declare(scopeStack, "test1");
+
+    int* value = GC_alloc(sizeof(int), false);
+    *value = 42;
+    ScopeStack_store(scopeStack, "test1", value);
+
+    int* loadedValue = ScopeStack_load(scopeStack, "test1");
+    if(*loadedValue == 42) {
+        result = true;
+    } else {
+        result = false;
+    }
+
+    int* value2 = GC_alloc(sizeof(int), false);
+    *value2 = 13;
+    ScopeStack_store(scopeStack, "test1", value2);
+
+    int* loadedValue2 = ScopeStack_load(scopeStack, "test1");
+    if(*loadedValue2 == 13) {
+        result &= true;
+    } else {
+        result &= false;
+    }
+
+    if(result) {
+        printf(ANSI_COLOR_GREEN "Test passed - SCOPE STACK OVERWRITE DATA" ANSI_COLOR_RESET "\n");
+    } else {
+        printf(ANSI_COLOR_RED "Test failed - SCOPE STACK OVERWRITE DATA" ANSI_COLOR_RESET "\n");
     }
 
     ScopeStack_exitScope(scopeStack);
