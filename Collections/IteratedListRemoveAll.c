@@ -17,6 +17,7 @@ void IteratedList_removeAllElements(IteratedList_PNTR l){
         return;
     }
     IteratedListNode_PNTR previous, current = l->first;
+    l->last->tail = NULL;
     while( current != NULL){
         previous = current;
         current = current->tail;

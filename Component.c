@@ -304,17 +304,17 @@ void component_constructor(Component_PNTR this) {
         }
     } else {
         thisConstructor = false;
-        for(int i = 0; i < givenParameters; i++) {
-            fgetc(this->sourceFile); //Skip type
+        for(int i = 0; i < paramsToRead; i++) {
+            fgetc(this->sourceFile);               //Skip type
             GC_decRef(component_readString(this)); //Skip name
         }
     }
 
     if(thisConstructor) {
         log_logMessage(INFO, this->name, "  Constructor match");
+        IteratedList_rewind(readParams);
+        IteratedList_rewind(this->parameters);
         for(int i = 0; i < paramsToRead; i++) {
-            IteratedList_rewind(readParams);
-            IteratedList_rewind(this->parameters);
             char* name = IteratedList_getNextElement(readParams);
             ScopeStack_declare(this->scopeStack, name);
             ScopeStack_store(this->scopeStack, name, IteratedList_getNextElement(this->parameters));
@@ -772,7 +772,7 @@ void component_expression(Component_PNTR this, int bytecode_op) {
     }
 
 #ifdef DEBUGGINGENABLED
-    log_logMessage(DEBUG, this->name, "    Result is %s", *(bool*)result->object ? "TRUE" : "FALSE");
+    log_logMessage(DEBUG, this->name, "    Result is %s/%d", *(bool*)result->object ? "TRUE" : "FALSE", *(int*)result->object);
 #endif
     Stack_push(this->dataStack, result);
 
@@ -849,6 +849,10 @@ void component_jump(Component_PNTR this) {
         log_logMessage(FATAL, this->name, "Syntax error - jump must be followed by distance.");
         component_cleanUpAndStop(this, NULL);
     }
+
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, this->name, "    Jumping back %d bytes", *(int*)jumpSize->object);
+#endif
 
     fseek(this->sourceFile, *(int*)jumpSize->object*-1, SEEK_CUR);
 }
