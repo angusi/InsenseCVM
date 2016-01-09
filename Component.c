@@ -282,6 +282,9 @@ void component_constructor(Component_PNTR this) {
     }
 
     int paramsToRead = fgetc(this->sourceFile);
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, this->name, "  %d params", paramsToRead);
+#endif
     if(paramsToRead == givenParameters) {
         readParams = IteratedList_constructList();
         for(int i = 0; i < givenParameters; i++) {
@@ -854,7 +857,7 @@ void component_jump(Component_PNTR this) {
     log_logMessage(DEBUG, this->name, "    Jumping back %d bytes", *(int*)jumpSize->object);
 #endif
 
-    fseek(this->sourceFile, *(int*)jumpSize->object*-1, SEEK_CUR);
+    fseek(this->sourceFile, (*(int*)jumpSize->object*-1)+1, SEEK_CUR);
 }
 
 void component_ifClause(Component_PNTR this) {
@@ -888,7 +891,7 @@ void component_ifClause(Component_PNTR this) {
         }
     } else {
 #ifdef DEBUGGINGENABLED
-        log_logMessage(DEBUG, this->name, "IF was TRUE");
+        log_logMessage(DEBUG, this->name, "IF was TRUE, not skipping %d bytes", *(int*)jumpSize->object);
 #endif
     }
 }
