@@ -30,9 +30,11 @@
 void IteratedList_rewind(IteratedList_PNTR l) {
     if (l == NULL) {
         log_logMessage(ERROR, ITERATED_LIST_NAME, ITERATED_LIST_NULL_POINTER);
+        return;
     }
     if (IteratedList_isEmpty(l)) {
         log_logMessage(ERROR, ITERATED_LIST_NAME, ITERATED_LIST_INDEX_OUT_OF_BOUNDS);
+        return;
     }
 
     l->next = l->first;
