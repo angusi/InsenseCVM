@@ -76,7 +76,6 @@ void* Stack_pop(Stack_PNTR this) {
     IteratedList_removeElement(this->storage, element);
     this->stackTop--;
     return element->object;
-
 }
 
 void* Stack_peek(Stack_PNTR this) {
@@ -111,9 +110,9 @@ int Stack_size(Stack_PNTR this) {
 // before freeing memory for Stack object
 static void Stack_decRef(Stack_PNTR this){
 #ifdef DEBUGGINGENABLED
-    log_logMessage(DEBUG, "Stack", "Decrementing reference to stack");
+    log_logMessage(DEBUG, "Stack", "Decrementing reference to stack with %d entries", this->stackTop);
 #endif
-    if(!this->stackTop == 0) {
+    if(this->stackTop != 0) {
         Stack_clear(this); // forces decRef on IteratedList content (node payload)
     }
     GC_decRef(this->storage);

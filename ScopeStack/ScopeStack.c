@@ -26,6 +26,7 @@
 
 #include "ScopeStack.h"
 #include "../Logger/Logger.h"
+#include "../GC/GC_mem.h"
 
 
 ScopeStack_PNTR ScopeStack_enterScope(ScopeStack_PNTR this) {
@@ -36,6 +37,8 @@ ScopeStack_PNTR ScopeStack_enterScope(ScopeStack_PNTR this) {
 
     ScopeLevel_PNTR newLevel = IteratedList_constructList();
     IteratedList_insertElement(this, newLevel);
+
+    GC_decRef(newLevel);
 
     return this;
 }

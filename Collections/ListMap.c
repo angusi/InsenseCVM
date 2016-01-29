@@ -29,7 +29,7 @@
 #include "../GC/GC_mem.h"
 #include "../Logger/Logger.h"
 
-void ListMap_decRef(ListMapEntry_PNTR pntr);
+void ListMapEntry_decRef(ListMapEntry_PNTR pntr);
 
 ListMap_PNTR ListMap_constructor() {
     return IteratedList_constructList();
@@ -43,9 +43,10 @@ void ListMap_declare(ListMap_PNTR hashList, char *key) {
     //No need, since GC_alloc 0's memory for us:
     //newEntry->value = NULL;
 
-    newEntry->decRef = ListMap_decRef;
+    newEntry->decRef = ListMapEntry_decRef;
 
     IteratedList_insertElement(hashList->first->payload, newEntry);
+    //GC_decRef(newEntry);
 }
 
 void* ListMap_get(ListMap_PNTR hashList, char *key) {
@@ -97,7 +98,7 @@ void ListMap_put(ListMap_PNTR hashList, char *key, void *value) {
     GC_decRef(value);
 }
 
-void ListMap_decRef(ListMapEntry_PNTR pntr) {
+void ListMapEntry_decRef(ListMapEntry_PNTR pntr) {
     GC_decRef(pntr->key);
     GC_decRef(pntr->value);
 }

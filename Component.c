@@ -321,12 +321,12 @@ void component_constructor(Component_PNTR this) {
             char* name = IteratedList_getNextElement(readParams);
             ScopeStack_declare(this->scopeStack, name);
             ScopeStack_store(this->scopeStack, name, IteratedList_getNextElement(this->parameters));
-            GC_decRef(name);
         }
 
         //Finished with these lists now, can free them up.
         if(this->parameters != NULL) {
             GC_decRef(this->parameters);
+            this->parameters = NULL;
         }
         GC_decRef(readParams);
     } else {
@@ -359,7 +359,7 @@ void component_declare(Component_PNTR this) {
         log_logMessage(DEBUG, this->name, "   Declaring %s", name);
 #endif
 
-        fgetc(this->sourceFile); //TODO: Check this byte matches TYPE_COMPONENT?
+        fgetc(this->sourceFile); //TODO: Check this byte matches TYPE_COMPONENT? (Why?)
         ScopeStack_declare(this->scopeStack, name);
         GC_decRef(name);
     }
@@ -781,7 +781,6 @@ void component_expression(Component_PNTR this, int bytecode_op) {
 
     GC_decRef(second);
     GC_decRef(first);
-
 }
 
 void component_not(Component_PNTR this) {
@@ -850,6 +849,7 @@ void component_jump(Component_PNTR this) {
     TypedObject_PNTR jumpSize = component_readData(this);
     if(jumpSize->type != BYTECODE_TYPE_INTEGER) {
         log_logMessage(FATAL, this->name, "Syntax error - jump must be followed by distance.");
+        GC_decRef(jumpSize);
         component_cleanUpAndStop(this, NULL);
     }
 
@@ -858,6 +858,7 @@ void component_jump(Component_PNTR this) {
 #endif
 
     fseek(this->sourceFile, (*(int*)jumpSize->object*-1)+1, SEEK_CUR);
+    GC_decRef(jumpSize);
 }
 
 void component_ifClause(Component_PNTR this) {
@@ -868,12 +869,15 @@ void component_ifClause(Component_PNTR this) {
     TypedObject_PNTR jumpSize = component_readData(this);
     if(jumpSize->type != BYTECODE_TYPE_INTEGER) {
         log_logMessage(FATAL, this->name, "Syntax error - if must be followed by skip distance.");
+        GC_decRef(jumpSize);
         component_cleanUpAndStop(this, NULL);
     }
 
     TypedObject_PNTR condition = Stack_pop(this->dataStack);
     if(condition->type != BYTECODE_TYPE_BOOL) {
         log_logMessage(FATAL, this->name, "Boolean type expected for if condition.");
+        GC_decRef(jumpSize);
+        GC_decRef(condition);
         component_cleanUpAndStop(this, NULL);
     }
 
@@ -884,7 +888,7 @@ void component_ifClause(Component_PNTR this) {
         fseek(this->sourceFile, *(int*)jumpSize->object, SEEK_CUR);
         if(fgetc(this->sourceFile) == BYTECODE_ELSE) {
             //Consume the else-jump so that the next byte is the else code.
-            component_readData(this);
+            GC_decRef(component_readData(this));
         } else {
             //Replace the byte we just read, as it's not an else next.
             fseek(this->sourceFile, -1, SEEK_CUR);
@@ -894,6 +898,9 @@ void component_ifClause(Component_PNTR this) {
         log_logMessage(DEBUG, this->name, "IF was TRUE, not skipping %d bytes", *(int*)jumpSize->object);
 #endif
     }
+
+    GC_decRef(jumpSize);
+    GC_decRef(condition);
 }
 
 void component_elseClause(Component_PNTR this) {
@@ -903,10 +910,12 @@ void component_elseClause(Component_PNTR this) {
     TypedObject_PNTR jumpSize = component_readData(this);
     if(jumpSize->type != BYTECODE_TYPE_INTEGER) {
         log_logMessage(FATAL, this->name, "Syntax error - else must be followed by skip distance.");
+        GC_decRef(jumpSize);
         component_cleanUpAndStop(this, NULL);
     }
 
     fseek(this->sourceFile, *(int*)jumpSize->object, SEEK_CUR);
+    GC_decRef(jumpSize);
 }
 
 //------
