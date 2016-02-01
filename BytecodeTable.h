@@ -43,6 +43,7 @@
 #define BYTECODE_TYPE_IN                10
 #define BYTECODE_TYPE_OUT               11
 
+
 // Bytecodes
 // Note that BYTECODE_POP and BYTECODE_TYPE are not defined in the Java VM or Bytecode compiler.
 #define BYTECODE_STOP            0 //STOP [COMPONENT_VARIABLE_NAME]

@@ -23,8 +23,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef CVM_HASHLIST_H
-#define CVM_HASHLIST_H
+#ifndef CVM_LISTMAP_H
+#define CVM_LISTMAP_H
 
 
 #include "IteratedList.h"
@@ -44,4 +44,4 @@ void ListMap_declare(ListMap_PNTR hashList, char *key);
 void*ListMap_get(ListMap_PNTR hashList, char *key);
 void ListMap_put(ListMap_PNTR hashList, char *key, void *value);
 
-#endif //CVM_HASHLIST_H
+#endif //CVM_LISTMAP_H

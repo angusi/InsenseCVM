@@ -38,5 +38,6 @@ struct TypedObject {
 
 TypedObject_PNTR TypedObject_construct(unsigned int type, void* object);
 bool TypedObject_isNumber(TypedObject_PNTR this);
+size_t TypedObject_getSize(unsigned int type);
 
 #endif //CVM_TYPEDOBJECT_H

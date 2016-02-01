@@ -46,3 +46,22 @@ bool TypedObject_isNumber(TypedObject_PNTR this) {
            this->type == BYTECODE_TYPE_BYTE ||
            this->type == BYTECODE_TYPE_UNSIGNED_INTEGER;
 }
+
+size_t TypedObject_getSize(unsigned int type) {
+    switch(type) {
+        case BYTECODE_TYPE_INTEGER:
+            return sizeof(int);
+        case BYTECODE_TYPE_UNSIGNED_INTEGER:
+            return sizeof(unsigned int);
+        case BYTECODE_TYPE_REAL:
+            return sizeof(double);
+        case BYTECODE_TYPE_BOOL:
+            return sizeof(bool);
+        case BYTECODE_TYPE_BYTE:
+            return sizeof(char);
+        case BYTECODE_TYPE_STRING:
+        case BYTECODE_TYPE_ARRAY:
+        default:
+            return 0; //"size of a string/array", as well as any other type, is meaningless in this context
+    }
+}

@@ -15,6 +15,8 @@
 
 #include "channel.h"
 #include "../Logger/Logger.h"
+#include "my_semaphore.h"
+#include "cstring.h"
 
 pthread_mutex_t conn_op_mutex = PTHREAD_MUTEX_INITIALIZER;	// to prevent connect during disconnect and vice versa
 
@@ -220,8 +222,7 @@ int channel_receive(Channel_PNTR cin, void *data, bool in_ack_after) {
 
         if(match->ready && cin->ready) {
             cin->buffer = match->buffer;		// found a ready sender, get pointer
-            //TODO: was "memncpy" - why?
-            memcpy(data, cin->buffer, cin->typesize);	// got pointer from sender; copy data
+            memncpy(data, cin->buffer, cin->typesize);	// got pointer from sender; copy data
 
             match->ready = false;
             cin->ready = false;

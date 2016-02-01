@@ -34,11 +34,10 @@ static void Component_decRef(Component_PNTR pntr);
 /**
  * Construct a new component object
  * @param[in] sourceFile String containing path to bytecode source file
- * @param[in] params Array of parameters
- * @param[in] paramCount Number of parameters
+ * @param[in] params Iterated List of parameters
  * @return Pointer to new component object
  */
-Component_PNTR component_newComponent(char *sourceFile, IteratedList_PNTR params, int paramCount) {
+Component_PNTR component_newComponent(char *sourceFile, IteratedList_PNTR params) {
     Component_PNTR this = GC_alloc(sizeof(Component_s), true);
     this->decRef = Component_decRef;
 
@@ -55,6 +54,8 @@ Component_PNTR component_newComponent(char *sourceFile, IteratedList_PNTR params
     this->parameters = params;
 
     this->dataStack = Stack_constructor();
+
+    this->channels = ListMap_constructor();
 
     this->stop = false;
 
@@ -134,6 +135,18 @@ void* component_run(void* component) {
             case BYTECODE_ELSE:
                 component_elseClause(this);
                 break;
+            case BYTECODE_CONNECT:
+                component_connect(this);
+                break;
+            case BYTECODE_DISCONNECT:
+                component_disconnect(this);
+                break;
+            case BYTECODE_SEND:
+                component_send(this);
+                break;
+            case BYTECODE_RECEIVE:
+                component_receive(this);
+                break;
             default:
                 log_logMessage(ERROR, this->name, "Unknown Byte Read - %u", nextByte);
                 break;
@@ -206,7 +219,9 @@ void component_component(Component_PNTR this) {
             int channel_direction = fgetc(this->sourceFile);
             int channel_type = fgetc(this->sourceFile);
             char* channel_name = component_readString(this);
-            //TODO: channels
+            Channel_PNTR new_channel = channel_create(channel_direction, TypedObject_getSize(channel_type), false);
+            ListMap_declare(this->channels, name);
+            ListMap_put(this->channels, name, new_channel);
             GC_decRef(channel_name);
         }
     }
@@ -247,7 +262,7 @@ Component_PNTR component_call(Component_PNTR this) {
         strcat(sourceFile, ".isc");
         sourceFile[sourceFileNameLength-1] = '\0';
         char* filePath = getFilePath(sourceFile);
-        Component_PNTR newComponent = component_newComponent(filePath, paramsList, number_of_parameters);
+        Component_PNTR newComponent = component_newComponent(filePath, paramsList);
         pthread_create(&newThread, NULL, component_run, newComponent);
         newComponent->threadId = newThread;
 
@@ -917,6 +932,133 @@ void component_elseClause(Component_PNTR this) {
     fseek(this->sourceFile, *(int*)jumpSize->object, SEEK_CUR);
     GC_decRef(jumpSize);
 }
+
+void component_connect(Component_PNTR this) {
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, this->name, "CONNECT");
+#endif
+    component_load(this);
+    TypedObject_PNTR component1 = Stack_pop(this->dataStack);
+
+    if(component1->type != BYTECODE_TYPE_COMPONENT) {
+        log_logMessage(FATAL, this->name, "Syntax error in CONNECT - expected a component variable name.");
+        GC_decRef(component1);
+        component_cleanUpAndStop(this, NULL);
+    }
+
+    if(fgetc(this->sourceFile) != BYTECODE_TYPE_STRING) {
+        log_logMessage(FATAL, this->name, "Syntax error in CONNECT - expected a channel name");
+        component_cleanUpAndStop(this, NULL);
+    } else {
+        char *name1 = component_readString(this);
+        Channel_PNTR channel1 = ListMap_get(this->channels, name1);
+
+        if(channel1 == NULL) {
+            log_logMessage(FATAL, this->name, "Error in CONNECT - channel %s not found", name1);
+            component_cleanUpAndStop(this, NULL);
+        }
+
+        component_load(this);
+        TypedObject_PNTR component2 = Stack_pop(this->dataStack);
+
+        if(component2->type != BYTECODE_TYPE_COMPONENT) {
+            log_logMessage(FATAL, this->name, "Syntax error in CONNECT - expected a component variable name.");
+            GC_decRef(component1);
+            component_cleanUpAndStop(this, NULL);
+        }
+
+        if(fgetc(this->sourceFile) != BYTECODE_TYPE_STRING) {
+            log_logMessage(FATAL, this->name, "Syntax error in CONNECT - expected a channel name");
+            component_cleanUpAndStop(this, NULL);
+        } else {
+            char *name2 = component_readString(this);
+            Channel_PNTR channel2 = ListMap_get(this->channels, name2);
+
+            if(channel2 == NULL) {
+                log_logMessage(FATAL, this->name, "Error in CONNECT - channel %s not found", name2);
+                component_cleanUpAndStop(this, NULL);
+            }
+
+            channel_bind(channel1, channel2); //Ordering is unimportant for this function call
+
+#ifdef DEBUGGINGENABLED
+                log_logMessage(DEBUG, this->name, "  Channel %s and %s connected", name1, name2);
+#endif
+
+        }
+    }
+}
+
+void component_disconnect(Component_PNTR this) {
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, this->name, "DISCONNECT");
+#endif
+
+    component_load(this);
+    TypedObject_PNTR component1 = Stack_pop(this->dataStack);
+
+    if (component1->type != BYTECODE_TYPE_COMPONENT) {
+        log_logMessage(FATAL, this->name, "Syntax error in DISCONNECT - expected a component variable name.");
+        GC_decRef(component1);
+        component_cleanUpAndStop(this, NULL);
+    }
+
+    if (fgetc(this->sourceFile) != BYTECODE_TYPE_STRING) {
+        log_logMessage(FATAL, this->name, "Syntax error in DISCONNECT - expected a channel name");
+        component_cleanUpAndStop(this, NULL);
+    } else {
+        char *name1 = component_readString(this);
+        Channel_PNTR channel1 = ListMap_get(this->channels, name1);
+
+        if (channel1 == NULL) {
+            log_logMessage(FATAL, this->name, "Error in DISCONNECT - channel %s not found", name1);
+            component_cleanUpAndStop(this, NULL);
+        }
+
+        channel_unbind(channel1);
+
+#ifdef DEBUGGINGENABLED
+        log_logMessage(DEBUG, this->name, "  Channel %s disconnected", name1);
+#endif
+    }
+}
+
+void component_send(Component_PNTR this) {
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, this->name, "SEND");
+#endif
+
+    if (fgetc(this->sourceFile) != BYTECODE_TYPE_STRING) {
+        log_logMessage(FATAL, this->name, "Syntax error in SEND - expected a channel name");
+        component_cleanUpAndStop(this, NULL);
+    } else {
+        char *name1 = component_readString(this);
+        Channel_PNTR channel1 = ListMap_get(this->channels, name1);
+
+        //TODO: This is not right - we surely want to send/receive the actual data, not the wrapper!
+        channel_send(channel1, Stack_pop(this->dataStack), NULL);
+    }
+}
+
+void component_receive(Component_PNTR this) {
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, this->name, "RECEIVE");
+#endif
+
+    if (fgetc(this->sourceFile) != BYTECODE_TYPE_STRING) {
+        log_logMessage(FATAL, this->name, "Syntax error in RECEIVE - expected a channel name");
+        component_cleanUpAndStop(this, NULL);
+    } else {
+        char *name1 = component_readString(this);
+        Channel_PNTR channel1 = ListMap_get(this->channels, name1);
+
+        //TODO: This is not right - we surely want to send/receive the actual data, not the wrapper!
+        TypedObject_PNTR receivedWrapper = GC_alloc(sizeof(TypedObject_PNTR), true);
+        channel_receive(channel1, receivedWrapper, false);
+        Stack_push(this->dataStack, receivedWrapper);
+    }
+}
+
 
 //------
 

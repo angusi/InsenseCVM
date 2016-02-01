@@ -35,6 +35,7 @@
 #include "Logger/Logger.h"
 #include "Collections/Stack.h"
 #include "ScopeStack/ScopeStack.h"
+#include "Channels/channel.h"
 #include "TypedObject.h"
 
 typedef struct Component Component_s, *Component_PNTR;
@@ -47,10 +48,11 @@ struct Component {
     ScopeStack_PNTR scopeStack;
     Stack_PNTR dataStack;
     Stack_PNTR waitComponents;
+    ListMap_PNTR channels;
     bool stop;
 };
 
-Component_PNTR component_newComponent(char *sourceFile, IteratedList_PNTR params, int paramCount);
+Component_PNTR component_newComponent(char *sourceFile, IteratedList_PNTR params);
 void* component_run(void* this);
 char* component_getName(Component_PNTR this);
 
@@ -76,5 +78,9 @@ void component_not(Component_PNTR this);
 void component_stop(Component_PNTR this);
 void component_ifClause(Component_PNTR this);
 void component_elseClause(Component_PNTR this);
+void component_connect(Component_PNTR this);
+void component_disconnect(Component_PNTR this);
+void component_send(Component_PNTR this);
+void component_receive(Component_PNTR this);
 
 #endif //CVM_COMPONENT_H

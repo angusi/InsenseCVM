@@ -19,6 +19,7 @@
 
 #include "../Collections/IteratedList.h"
 #include "../GC/GC_mem.h"
+#include "my_semaphore.h"
 #include <semaphore.h>
 #include <pthread.h>
 #include <stdlib.h>
