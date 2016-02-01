@@ -35,8 +35,9 @@ ScopeStack_PNTR ScopeStack_enterScope(ScopeStack_PNTR this) {
         this = IteratedList_constructList();
     }
 
-    ScopeLevel_PNTR newLevel = IteratedList_constructList();
+    ListMap_PNTR newLevel = ListMap_constructor();
     IteratedList_insertElement(this, newLevel);
+    printf("--------%p\n", newLevel);
 
     GC_decRef(newLevel);
 
@@ -59,19 +60,56 @@ void ScopeStack_declare(ScopeStack_PNTR this, char *name) {
 #ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, "ScopeStack", "Declaring %s in Scope Stack %p", name, this);
 #endif
-    return ListMap_declare(this, name);
+    return ListMap_declare(this->first->payload, name);
 }
 
 void* ScopeStack_load(ScopeStack_PNTR this, char *name) {
 #ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, "ScopeStack", "Loading %s from Scope Stack %p", name, this);
 #endif
-    return ListMap_get(this, name);
+
+    IteratedListNode_PNTR first = this->first;
+    IteratedListNode_PNTR thisLevel = first;
+
+    void* element = ListMap_get(thisLevel->payload, name);
+    if(element != NULL) {
+        return element;
+    } else {
+        thisLevel = thisLevel->tail;
+        while(thisLevel != first) {
+            element = ListMap_get(thisLevel->payload, name);
+            if(element != NULL) {
+                return element;
+            } else {
+                thisLevel = thisLevel->tail;
+            }
+        }
+    }
+
+    return NULL;
 }
 
 void ScopeStack_store(ScopeStack_PNTR this, char *name, void *value) {
 #ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, "ScopeStack", "Store %p as %s in Scope Stack %p", value, name, this);
 #endif
-    return ListMap_put(this, name, value);
+
+    IteratedListNode_PNTR first = this->first;
+    IteratedListNode_PNTR thisLevel = first;
+
+    if(ListMap_put(thisLevel->payload, name, value)) {
+        return;
+    } else {
+        thisLevel = thisLevel->tail;
+        while(thisLevel != first) {
+            if(ListMap_put(thisLevel->payload, name, value)) {
+                return;
+            } else {
+                thisLevel = thisLevel->tail;
+            }
+        }
+    }
+
+    log_logMessage(ERROR, "Variable Store", "Undeclared variable %s", name);
+    return;
 }

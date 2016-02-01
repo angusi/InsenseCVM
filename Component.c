@@ -216,12 +216,20 @@ void component_component(Component_PNTR this) {
         log_logMessage(DEBUG, this->name, "    %d channels", number_of_channels);
 
         for(int j = 0; j < number_of_channels; j++) {
-            int channel_direction = fgetc(this->sourceFile);
+            int channel_direction = fgetc(this->sourceFile) ;
+            if(channel_direction == BYTECODE_TYPE_IN) {
+                channel_direction = CHAN_IN;
+            } else if(channel_direction == BYTECODE_TYPE_OUT) {
+                channel_direction = CHAN_OUT;
+            } else {
+                log_logMessage(FATAL, this->name, "Syntax error in COMPONENT - channel direction unknown");
+                component_cleanUpAndStop(this, NULL);
+            }
             int channel_type = fgetc(this->sourceFile);
             char* channel_name = component_readString(this);
             Channel_PNTR new_channel = channel_create(channel_direction, TypedObject_getSize(channel_type), false);
-            ListMap_declare(this->channels, name);
-            ListMap_put(this->channels, name, new_channel);
+            ListMap_declare(this->channels, channel_name);
+            ListMap_put(this->channels, channel_name, new_channel);
             GC_decRef(channel_name);
         }
     }

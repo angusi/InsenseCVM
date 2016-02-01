@@ -40,8 +40,8 @@ typedef IteratedList_PNTR ListMap_PNTR;
 typedef IteratedList_s ListMap_s;
 
 ListMap_PNTR ListMap_constructor();
-void ListMap_declare(ListMap_PNTR hashList, char *key);
-void*ListMap_get(ListMap_PNTR hashList, char *key);
-void ListMap_put(ListMap_PNTR hashList, char *key, void *value);
+void ListMap_declare(ListMap_PNTR listMap, char *key);
+void*ListMap_get(ListMap_PNTR listMap, char *key);
+bool ListMap_put(ListMap_PNTR listMap, char *key, void *value);
 
 #endif //CVM_LISTMAP_H
