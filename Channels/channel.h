@@ -42,9 +42,9 @@ struct Channel {
 	bool nd_received;	// used by select
 	IteratedList_PNTR connections; 	// list of type Channel_PNTR, channels we're connected to
 	pthread_mutex_t mutex;	// for locking the channel
-//	my_sem_t conns_sem;	        // connections available mutex
-//	my_sem_t blocked;	    	// block component if waiting for other channel
-//	my_sem_t actually_received;	// make sure data can't be changed until after a receive has completed
+	my_sem_t conns_sem;	        // connections available mutex
+	my_sem_t blocked;	    	// block component if waiting for other channel
+	my_sem_t actually_received;	// make sure data can't be changed until after a receive has completed
 };
 
 
