@@ -55,8 +55,11 @@ int HashList_isDesiredElement(void *element, void *key) {
 
 void* ListMap_get(ListMap_PNTR listMap, char *key) {
     ListMapEntry_PNTR varElement = IteratedList_searchList(listMap, HashList_isDesiredElement, key);
-
-    return varElement;
+    if(varElement == NULL) {
+        return NULL;
+    } else {
+        return varElement->value;
+    }
 }
 
 bool ListMap_put(ListMap_PNTR listMap, char *key, void *value) {
@@ -68,7 +71,6 @@ bool ListMap_put(ListMap_PNTR listMap, char *key, void *value) {
     }
 
     GC_assign(&(varElement->value), value);
-    GC_decRef(value);
 
     return true;
 }

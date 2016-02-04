@@ -1041,6 +1041,9 @@ void component_send(Component_PNTR this) {
         component_cleanUpAndStop(this, NULL);
     } else {
         char *name1 = component_readString(this);
+#ifdef DEBUGGINGENABLED
+        log_logMessage(DEBUG, this->name, "    Sending on %s", name1);
+#endif
         Channel_PNTR channel1 = ListMap_get(this->channels, name1);
 
         //TODO: This is not right - we surely want to send/receive the actual data, not the wrapper!

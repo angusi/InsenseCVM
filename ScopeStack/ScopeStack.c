@@ -37,7 +37,6 @@ ScopeStack_PNTR ScopeStack_enterScope(ScopeStack_PNTR this) {
 
     ListMap_PNTR newLevel = ListMap_constructor();
     IteratedList_insertElement(this, newLevel);
-    printf("--------%p\n", newLevel);
 
     GC_decRef(newLevel);
 

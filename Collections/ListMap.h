@@ -36,7 +36,7 @@ struct ListMapEntry {
     void* value;
 };
 
-typedef IteratedList_PNTR ListMap_PNTR;
+typedef IteratedList_PNTR  ListMap_PNTR;
 typedef IteratedList_s ListMap_s;
 
 ListMap_PNTR ListMap_constructor();
