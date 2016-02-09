@@ -97,11 +97,13 @@ void ScopeStack_store(ScopeStack_PNTR this, char *name, void *value) {
     IteratedListNode_PNTR thisLevel = first;
 
     if(ListMap_put(thisLevel->payload, name, value)) {
+        log_logMessage(INFO, "ScopeStack", "  Successfully found and stored data in key %s", name);
         return;
     } else {
         thisLevel = thisLevel->tail;
         while(thisLevel != first) {
             if(ListMap_put(thisLevel->payload, name, value)) {
+                log_logMessage(INFO, "ScopeStack", "  Successfully found and stored data in key %s", name);
                 return;
             } else {
                 thisLevel = thisLevel->tail;
@@ -109,6 +111,6 @@ void ScopeStack_store(ScopeStack_PNTR this, char *name, void *value) {
         }
     }
 
-    log_logMessage(ERROR, "Variable Store", "Undeclared variable %s", name);
+    log_logMessage(ERROR, "ScopeStack", "  Undeclared variable %s", name);
     return;
 }

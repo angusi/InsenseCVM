@@ -32,7 +32,7 @@ static const char*ITERATED_LIST_CONSTRUCT_LIST_FAILED = "Could not construct new
 static const char* ITERATED_LIST_CONSTRUCT_NODE_FAILED = "Could not construct new Iterated List Node";
 static const char* ITERATED_LIST_NULL_POINTER = "List pointer is null";
 static const char* ITERATED_LIST_NULL_ELEMENT = "List element is null";
-static const char* ITERATED_LIST_INDEX_OUT_OF_BOUNDS = "List index out of bounds";
+static const char* ITERATED_LIST_INDEX_OUT_OF_BOUNDS = "List index out of bounds or list is empty";
 static const char* ITERATED_LIST_ELEMENT_NOT_FOUND = "Element not found";
 
 #ifdef DEBUGGINGENABLED

@@ -33,7 +33,6 @@ void IteratedList_rewind(IteratedList_PNTR l) {
         return;
     }
     if (IteratedList_isEmpty(l)) {
-        log_logMessage(ERROR, ITERATED_LIST_NAME, ITERATED_LIST_INDEX_OUT_OF_BOUNDS);
         return;
     }
 

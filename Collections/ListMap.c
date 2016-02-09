@@ -49,12 +49,12 @@ void ListMap_declare(ListMap_PNTR listMap, char *key) {
     //GC_decRef(newEntry);
 }
 
-int HashList_isDesiredElement(void *element, void *key) {
+int ListMap_isDesiredElement(void *element, void *key) {
     return strcmp(((ListMapEntry_PNTR)element)->key, (char*)key);
 }
 
 void* ListMap_get(ListMap_PNTR listMap, char *key) {
-    ListMapEntry_PNTR varElement = IteratedList_searchList(listMap, HashList_isDesiredElement, key);
+    ListMapEntry_PNTR varElement = IteratedList_searchList(listMap, ListMap_isDesiredElement, key);
     if(varElement == NULL) {
         return NULL;
     } else {
@@ -63,10 +63,10 @@ void* ListMap_get(ListMap_PNTR listMap, char *key) {
 }
 
 bool ListMap_put(ListMap_PNTR listMap, char *key, void *value) {
-    ListMapEntry_PNTR varElement = IteratedList_searchList(listMap, HashList_isDesiredElement, key);
+    ListMapEntry_PNTR varElement = IteratedList_searchList(listMap, ListMap_isDesiredElement, key);
 
     if(varElement == NULL) {
-        log_logMessage(ERROR, "Variable Store", "Undeclared variable %s", key);
+        log_logMessage(INFO, "ListMap", "Tried to put data in unknown key %s", key);
         return false;
     }
 

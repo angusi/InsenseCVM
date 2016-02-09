@@ -33,6 +33,7 @@
 bool testConstructor();
 bool testDeclareStoreLoad();
 bool testMultipleItems();
+bool testMultipleScopes();
 bool testOverwriteValue();
 
 int main(int argc, char* argv[]) {
@@ -54,6 +55,9 @@ int main(int argc, char* argv[]) {
     else failed++;
 
     if(testMultipleItems()) passed++;
+    else failed++;
+
+    if(testMultipleScopes()) passed++;
     else failed++;
 
     if(testOverwriteValue()) passed++;
@@ -170,6 +174,64 @@ bool testMultipleItems() {
     }
 
     ScopeStack_exitScope(scopeStack);
+
+    return result;
+}
+
+bool testMultipleScopes() {
+    bool result;
+
+    ScopeStack_PNTR scopeStack = ScopeStack_enterScope(NULL);
+    ScopeStack_declare(scopeStack, "test1");
+
+    int* value = GC_alloc(sizeof(int), false);
+    *value = 42;
+    ScopeStack_store(scopeStack, "test1", value);
+
+    ScopeStack_enterScope(scopeStack);
+    ScopeStack_declare(scopeStack, "test2");
+    int* value2 = GC_alloc(sizeof(int), false);
+    *value2 = 13;
+    ScopeStack_store(scopeStack, "test2", value2);
+
+    ScopeStack_enterScope(scopeStack);
+    ScopeStack_declare(scopeStack, "test1");
+    int* value3 = GC_alloc(sizeof(int), false);
+    *value3 = 43;
+    ScopeStack_store(scopeStack, "test1", value3);
+
+    int* loadedValue = ScopeStack_load(scopeStack, "test1");
+    if(*loadedValue == 43) {
+        result = true;
+    } else {
+        result = false;
+    }
+
+    loadedValue = ScopeStack_load(scopeStack, "test2");
+    if(*loadedValue == 13) {
+        result &= true;
+    } else {
+        result &= false;
+    }
+
+    ScopeStack_exitScope(scopeStack);
+
+    loadedValue = ScopeStack_load(scopeStack, "test1");
+    if(*loadedValue == 42) {
+        result &= true;
+    } else {
+        result &= false;
+    }
+
+    if(result) {
+        printf(ANSI_COLOR_GREEN "Test passed - SCOPE STACK MULTI-LEVEL" ANSI_COLOR_RESET "\n");
+    } else {
+        printf(ANSI_COLOR_RED "Test failed - SCOPE STACK MULTI_LEVE" ANSI_COLOR_RESET "\n");
+    }
+
+    ScopeStack_exitScope(scopeStack);
+    ScopeStack_exitScope(scopeStack);
+
 
     return result;
 }

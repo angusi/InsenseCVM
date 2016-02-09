@@ -210,23 +210,39 @@ void component_component(Component_PNTR this) {
     }
 
     int number_of_interfaces = fgetc(this->sourceFile);
+#ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, this->name, "    %d interfaces", number_of_interfaces);
+#endif
     for(int i = 0; i < number_of_interfaces; i++) {
         int number_of_channels = fgetc(this->sourceFile);
+#ifdef DEBUGGINGENABLED
         log_logMessage(DEBUG, this->name, "    %d channels", number_of_channels);
+#endif
 
         for(int j = 0; j < number_of_channels; j++) {
             int channel_direction = fgetc(this->sourceFile) ;
             if(channel_direction == BYTECODE_TYPE_IN) {
+#ifdef DEBUGGINGENABLED
+                log_logMessage(DEBUG, this->name, "     Channel %d: IN", j);
+#endif
                 channel_direction = CHAN_IN;
             } else if(channel_direction == BYTECODE_TYPE_OUT) {
+#ifdef DEBUGGINGENABLED
+                log_logMessage(DEBUG, this->name, "     Channel %d: OUT", j);
+#endif
                 channel_direction = CHAN_OUT;
             } else {
                 log_logMessage(FATAL, this->name, "Syntax error in COMPONENT - channel direction unknown");
                 component_cleanUpAndStop(this, NULL);
             }
             int channel_type = fgetc(this->sourceFile);
+#ifdef DEBUGGINGENABLED
+            log_logMessage(DEBUG, this->name, "     Channel %d: %d", j, channel_type);
+#endif
             char* channel_name = component_readString(this);
+#ifdef DEBUGGINGENABLED
+            log_logMessage(DEBUG, this->name, "     Channel %d: %s", j, channel_name);
+#endif
             Channel_PNTR new_channel = channel_create(channel_direction, TypedObject_getSize(channel_type), false);
             ListMap_declare(this->channels, channel_name);
             ListMap_put(this->channels, channel_name, new_channel);
@@ -240,56 +256,49 @@ Component_PNTR component_call(Component_PNTR this) {
 #ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, this->name, "CALL");
 #endif
-    int nextByte;
-    if((nextByte = fgetc(this->sourceFile)) != BYTECODE_TYPE_STRING) {
-        log_logMessage(FATAL, this->name, "Syntax error in CALL - %d", nextByte);
-        component_cleanUpAndStop(this, NULL);
-        return NULL; //NULL - cleanUp will have cleaned up and terminated thread already.
-    } else {
-        char* name = component_readString(this);
-        int number_of_parameters = fgetc(this->sourceFile);
+    char* name = component_readString(this);
+    int number_of_parameters = fgetc(this->sourceFile);
 #ifdef DEBUGGINGENABLED
-        log_logMessage(DEBUG, this->name, "   Calling %s", name);
+    log_logMessage(DEBUG, this->name, "   Calling %s", name);
 #endif
 
-        IteratedList_PNTR paramsList = NULL;
-        if(number_of_parameters > 0) {
-            paramsList = IteratedList_constructList();
-            for (int i = 0; i < number_of_parameters; i++) {
-                TypedObject_PNTR param = Stack_pop(this->dataStack);
-                IteratedList_insertElement(paramsList, param);
-            }
+    IteratedList_PNTR paramsList = NULL;
+    if(number_of_parameters > 0) {
+        paramsList = IteratedList_constructList();
+        for (int i = 0; i < number_of_parameters; i++) {
+            TypedObject_PNTR param = Stack_pop(this->dataStack);
+            IteratedList_insertElement(paramsList, param);
         }
-
-        pthread_t newThread;
-
-        size_t sourceFileNameLength = 8 + strlen(name) + 4 + 1; //"Insense_" + name + ".isc" + '\0'
-        char* sourceFile = GC_alloc(sourceFileNameLength, false);
-        strcat(sourceFile, "Insense_");
-        strcat(sourceFile, name);
-        strcat(sourceFile, ".isc");
-        sourceFile[sourceFileNameLength-1] = '\0';
-        char* filePath = getFilePath(sourceFile);
-        Component_PNTR newComponent = component_newComponent(filePath, paramsList);
-        pthread_create(&newThread, NULL, component_run, newComponent);
-        newComponent->threadId = newThread;
-
-        log_logMessage(INFO, this->name, "    Component %s is at address %p", name, newComponent);
-
-        TypedObject_PNTR newObject = TypedObject_construct(BYTECODE_TYPE_COMPONENT, newComponent);
-        Stack_push(this->dataStack, newObject);
-
-        if(this->waitComponents == NULL) {
-            this->waitComponents = Stack_constructor();
-        }
-        Stack_push(this->waitComponents, newObject);
-
-        GC_decRef(sourceFile);
-        GC_decRef(filePath);
-        GC_decRef(name);
-
-        return newComponent;
     }
+
+    pthread_t newThread;
+
+    size_t sourceFileNameLength = 8 + strlen(name) + 4 + 1; //"Insense_" + name + ".isc" + '\0'
+    char* sourceFile = GC_alloc(sourceFileNameLength, false);
+    strcat(sourceFile, "Insense_");
+    strcat(sourceFile, name);
+    strcat(sourceFile, ".isc");
+    sourceFile[sourceFileNameLength-1] = '\0';
+    char* filePath = getFilePath(sourceFile);
+    Component_PNTR newComponent = component_newComponent(filePath, paramsList);
+    pthread_create(&newThread, NULL, component_run, newComponent);
+    newComponent->threadId = newThread;
+
+    log_logMessage(INFO, this->name, "    Component %s is at address %p", name, newComponent);
+
+    TypedObject_PNTR newObject = TypedObject_construct(BYTECODE_TYPE_COMPONENT, newComponent);
+    Stack_push(this->dataStack, newObject);
+
+    if(this->waitComponents == NULL) {
+        this->waitComponents = Stack_constructor();
+    }
+    Stack_push(this->waitComponents, newObject);
+
+    GC_decRef(sourceFile);
+    GC_decRef(filePath);
+    GC_decRef(name);
+
+    return newComponent;
 }
 
 void component_constructor(Component_PNTR this) {
@@ -314,15 +323,9 @@ void component_constructor(Component_PNTR this) {
             int nextParamType = fgetc(this->sourceFile);
             TypedObject_PNTR nextParam = IteratedList_getNextElement(this->parameters);
             if(nextParamType == nextParam->type) {
-                int nextByte;
-                if((nextByte = fgetc(this->sourceFile)) != BYTECODE_TYPE_STRING) {
-                    log_logMessage(FATAL, this->name, "Syntax error in CONSTRUCTOR - %d", nextByte);
-                    component_cleanUpAndStop(this, NULL);
-                } else {
-                    char *name = component_readString(this);
-                    IteratedList_insertElementAtTail(readParams, name);
-                    GC_decRef(name);
-                }
+                char *name = component_readString(this);
+                IteratedList_insertElementAtTail(readParams, name);
+                GC_decRef(name);
             } else {
                 thisConstructor = false;
                 GC_decRef(component_readString(this)); //Immediately discard data
@@ -339,7 +342,9 @@ void component_constructor(Component_PNTR this) {
     if(thisConstructor) {
         log_logMessage(INFO, this->name, "  Constructor match");
         IteratedList_rewind(readParams);
-        IteratedList_rewind(this->parameters);
+        if(this->parameters != NULL) {
+            IteratedList_rewind(this->parameters);
+        }
         for(int i = 0; i < paramsToRead; i++) {
             char* name = IteratedList_getNextElement(readParams);
             ScopeStack_declare(this->scopeStack, name);
@@ -355,14 +360,16 @@ void component_constructor(Component_PNTR this) {
     } else {
         log_logMessage(INFO, this->name, " Constructor mismatch, fastforwarding");
 
-        GC_decRef(readParams);
+        if(readParams != NULL) {
+            GC_decRef(readParams);
+        }
         IteratedList_rewind(this->parameters);
 
         int nextByte = component_skipToNext(this, BYTECODE_CONSTRUCTOR);
         if( nextByte == BYTECODE_CONSTRUCTOR ) {
             component_constructor(this);
         } else {
-            log_logMessage(FATAL, this->name, "Constructor not fond!");
+            log_logMessage(FATAL, this->name, "Constructor not found!");
             component_cleanUpAndStop(this, NULL);
         }
     }
@@ -372,20 +379,14 @@ void component_declare(Component_PNTR this) {
 #ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, this->name, "DECLARE");
 #endif
-    int nextByte;
-    if((nextByte = fgetc(this->sourceFile)) != BYTECODE_TYPE_STRING) {
-        log_logMessage(FATAL, this->name, "Syntax error in DECLARE - %d", nextByte);
-        component_cleanUpAndStop(this, NULL);
-    } else {
-        char* name = component_readString(this);
+    char* name = component_readString(this);
 #ifdef DEBUGGINGENABLED
-        log_logMessage(DEBUG, this->name, "   Declaring %s", name);
+    log_logMessage(DEBUG, this->name, "   Declaring %s", name);
 #endif
 
-        fgetc(this->sourceFile); //TODO: Check this byte matches TYPE_COMPONENT? (Why?)
-        ScopeStack_declare(this->scopeStack, name);
-        GC_decRef(name);
-    }
+    fgetc(this->sourceFile); //TODO: Check this byte matches TYPE_COMPONENT? (Why?)
+    ScopeStack_declare(this->scopeStack, name);
+    GC_decRef(name);
 }
 
 void component_store(Component_PNTR this) {
@@ -393,19 +394,13 @@ void component_store(Component_PNTR this) {
     log_logMessage(DEBUG, this->name, "STORE");
 #endif
 
-    int nextByte;
-    if((nextByte = fgetc(this->sourceFile)) != BYTECODE_TYPE_STRING) {
-        log_logMessage(FATAL, this->name, "Syntax error in DECLARE - %d", nextByte);
-        component_cleanUpAndStop(this, NULL);
-    } else {
-        char *name = component_readString(this);
+    char *name = component_readString(this);
 #ifdef DEBUGGINGENABLED
-        log_logMessage(DEBUG, this->name, "   Storing %s", name);
+    log_logMessage(DEBUG, this->name, "   Storing %s", name);
 #endif
 
-        ScopeStack_store(this->scopeStack, name, Stack_pop(this->dataStack));
-        GC_decRef(name);
-    }
+    ScopeStack_store(this->scopeStack, name, Stack_pop(this->dataStack));
+    GC_decRef(name);
 }
 
 void component_push(Component_PNTR this) {
@@ -427,19 +422,13 @@ void component_load(Component_PNTR this) {
     log_logMessage(DEBUG, this->name, "LOAD");
 #endif
 
-    int nextByte;
-    if((nextByte = fgetc(this->sourceFile)) != BYTECODE_TYPE_STRING) {
-        log_logMessage(FATAL, this->name, "Syntax error in LOAD - %d", nextByte);
-        component_cleanUpAndStop(this, NULL);
-    } else {
-        char *name = component_readString(this);
+    char *name = component_readString(this);
 #ifdef DEBUGGINGENABLED
-        log_logMessage(DEBUG, this->name, "   Loading %s", name);
+    log_logMessage(DEBUG, this->name, "   Loading %s", name);
 #endif
 
-        Stack_push(this->dataStack, ScopeStack_load(this->scopeStack, name));
-        GC_decRef(name);
-    }
+    Stack_push(this->dataStack, ScopeStack_load(this->scopeStack, name));
+    GC_decRef(name);
 }
 
 void component_expression(Component_PNTR this, int bytecode_op) {
@@ -831,25 +820,18 @@ void component_stop(Component_PNTR this) {
     log_logMessage(DEBUG, this->name, "STOP");
 #endif
 
-    int nextByte;
-    if((nextByte = fgetc(this->sourceFile)) != BYTECODE_TYPE_STRING) {
-        log_logMessage(FATAL, this->name, "Syntax error in STOP - %d", nextByte);
-        component_cleanUpAndStop(this, NULL);
+    char *name = component_readString(this);
+    if(!strcmp(name, "") || !strcmp(name, this->name)) { //INVERT strcmp because 0 = match
+        this->stop = true;
     } else {
-        char *name = component_readString(this);
-        if(!strcmp(name, "") || !strcmp(name, this->name)) { //INVERT strcmp because 0 = match
-            this->stop = true;
-        } else {
-            TypedObject_PNTR component = ScopeStack_load(this->scopeStack, name);
-            if(component == NULL || component->type != BYTECODE_TYPE_COMPONENT) {
-                log_logMessage(FATAL, this->name, "Component %s could not be found", name, nextByte);
-                component_cleanUpAndStop(this, NULL);
-            }
-            ((Component_PNTR)component->object)->stop = true;
+        TypedObject_PNTR component = ScopeStack_load(this->scopeStack, name);
+        if(component == NULL || component->type != BYTECODE_TYPE_COMPONENT) {
+            log_logMessage(FATAL, this->name, "Component %s could not be found", name);
+            component_cleanUpAndStop(this, NULL);
         }
-        GC_decRef(name);
+        ((Component_PNTR)component->object)->stop = true;
     }
-
+    GC_decRef(name);
 }
 
 void component_behaviourJump(Component_PNTR this) {
@@ -954,47 +936,36 @@ void component_connect(Component_PNTR this) {
         component_cleanUpAndStop(this, NULL);
     }
 
-    if(fgetc(this->sourceFile) != BYTECODE_TYPE_STRING) {
-        log_logMessage(FATAL, this->name, "Syntax error in CONNECT - expected a channel name");
+    char *name1 = component_readString(this);
+    Channel_PNTR channel1 = ListMap_get(this->channels, name1);
+
+    if(channel1 == NULL) {
+        log_logMessage(FATAL, this->name, "Error in CONNECT - channel %s not found", name1);
         component_cleanUpAndStop(this, NULL);
-    } else {
-        char *name1 = component_readString(this);
-        Channel_PNTR channel1 = ListMap_get(this->channels, name1);
+    }
 
-        if(channel1 == NULL) {
-            log_logMessage(FATAL, this->name, "Error in CONNECT - channel %s not found", name1);
-            component_cleanUpAndStop(this, NULL);
-        }
+    component_load(this);
+    TypedObject_PNTR component2 = Stack_pop(this->dataStack);
 
-        component_load(this);
-        TypedObject_PNTR component2 = Stack_pop(this->dataStack);
+    if(component2->type != BYTECODE_TYPE_COMPONENT) {
+        log_logMessage(FATAL, this->name, "Syntax error in CONNECT - expected a component variable name.");
+        GC_decRef(component1);
+        component_cleanUpAndStop(this, NULL);
+    }
 
-        if(component2->type != BYTECODE_TYPE_COMPONENT) {
-            log_logMessage(FATAL, this->name, "Syntax error in CONNECT - expected a component variable name.");
-            GC_decRef(component1);
-            component_cleanUpAndStop(this, NULL);
-        }
+    char *name2 = component_readString(this);
+    Channel_PNTR channel2 = ListMap_get(this->channels, name2);
 
-        if(fgetc(this->sourceFile) != BYTECODE_TYPE_STRING) {
-            log_logMessage(FATAL, this->name, "Syntax error in CONNECT - expected a channel name");
-            component_cleanUpAndStop(this, NULL);
-        } else {
-            char *name2 = component_readString(this);
-            Channel_PNTR channel2 = ListMap_get(this->channels, name2);
+    if(channel2 == NULL) {
+        log_logMessage(FATAL, this->name, "Error in CONNECT - channel %s not found", name2);
+        component_cleanUpAndStop(this, NULL);
+    }
 
-            if(channel2 == NULL) {
-                log_logMessage(FATAL, this->name, "Error in CONNECT - channel %s not found", name2);
-                component_cleanUpAndStop(this, NULL);
-            }
-
-            channel_bind(channel1, channel2); //Ordering is unimportant for this function call
+    channel_bind(channel1, channel2); //Ordering is unimportant for this function call
 
 #ifdef DEBUGGINGENABLED
-                log_logMessage(DEBUG, this->name, "  Channel %s and %s connected", name1, name2);
+        log_logMessage(DEBUG, this->name, "  Channel %s and %s connected", name1, name2);
 #endif
-
-        }
-    }
 }
 
 void component_disconnect(Component_PNTR this) {
@@ -1011,24 +982,19 @@ void component_disconnect(Component_PNTR this) {
         component_cleanUpAndStop(this, NULL);
     }
 
-    if (fgetc(this->sourceFile) != BYTECODE_TYPE_STRING) {
-        log_logMessage(FATAL, this->name, "Syntax error in DISCONNECT - expected a channel name");
+    char *name1 = component_readString(this);
+    Channel_PNTR channel1 = ListMap_get(this->channels, name1);
+
+    if (channel1 == NULL) {
+        log_logMessage(FATAL, this->name, "Error in DISCONNECT - channel %s not found", name1);
         component_cleanUpAndStop(this, NULL);
-    } else {
-        char *name1 = component_readString(this);
-        Channel_PNTR channel1 = ListMap_get(this->channels, name1);
+    }
 
-        if (channel1 == NULL) {
-            log_logMessage(FATAL, this->name, "Error in DISCONNECT - channel %s not found", name1);
-            component_cleanUpAndStop(this, NULL);
-        }
-
-        channel_unbind(channel1);
+    channel_unbind(channel1);
 
 #ifdef DEBUGGINGENABLED
-        log_logMessage(DEBUG, this->name, "  Channel %s disconnected", name1);
+    log_logMessage(DEBUG, this->name, "  Channel %s disconnected", name1);
 #endif
-    }
 }
 
 void component_send(Component_PNTR this) {
@@ -1036,19 +1002,19 @@ void component_send(Component_PNTR this) {
     log_logMessage(DEBUG, this->name, "SEND");
 #endif
 
-    if (fgetc(this->sourceFile) != BYTECODE_TYPE_STRING) {
-        log_logMessage(FATAL, this->name, "Syntax error in SEND - expected a channel name");
-        component_cleanUpAndStop(this, NULL);
-    } else {
-        char *name1 = component_readString(this);
+    char *name1 = component_readString(this);
 #ifdef DEBUGGINGENABLED
-        log_logMessage(DEBUG, this->name, "    Sending on %s", name1);
+    log_logMessage(DEBUG, this->name, "    Sending on %s", name1);
 #endif
-        Channel_PNTR channel1 = ListMap_get(this->channels, name1);
+    Channel_PNTR channel1 = ListMap_get(this->channels, name1);
 
-        //TODO: This is not right - we surely want to send/receive the actual data, not the wrapper!
-        channel_send(channel1, Stack_pop(this->dataStack), NULL);
+    if(channel1 == NULL) {
+        log_logMessage(FATAL, this->name, "Error in SEND - couldn't find channel named %s", name1);
+        component_cleanUpAndStop(this, NULL);
     }
+
+    //TODO: This is not right - we surely want to send/receive the actual data, not the wrapper!
+    channel_send(channel1, Stack_pop(this->dataStack), NULL);
 }
 
 void component_receive(Component_PNTR this) {
@@ -1056,18 +1022,13 @@ void component_receive(Component_PNTR this) {
     log_logMessage(DEBUG, this->name, "RECEIVE");
 #endif
 
-    if (fgetc(this->sourceFile) != BYTECODE_TYPE_STRING) {
-        log_logMessage(FATAL, this->name, "Syntax error in RECEIVE - expected a channel name");
-        component_cleanUpAndStop(this, NULL);
-    } else {
-        char *name1 = component_readString(this);
-        Channel_PNTR channel1 = ListMap_get(this->channels, name1);
+    char *name1 = component_readString(this);
+    Channel_PNTR channel1 = ListMap_get(this->channels, name1);
 
-        //TODO: This is not right - we surely want to send/receive the actual data, not the wrapper!
-        TypedObject_PNTR receivedWrapper = GC_alloc(sizeof(TypedObject_PNTR), true);
-        channel_receive(channel1, receivedWrapper, false);
-        Stack_push(this->dataStack, receivedWrapper);
-    }
+    //TODO: This is not right - we surely want to send/receive the actual data, not the wrapper!
+    TypedObject_PNTR receivedWrapper = GC_alloc(sizeof(TypedObject_PNTR), true);
+    channel_receive(channel1, receivedWrapper, false);
+    Stack_push(this->dataStack, receivedWrapper);
 }
 
 
@@ -1081,9 +1042,17 @@ char* component_getName(Component_PNTR this) {
 }
 
 char* component_readString(Component_PNTR this) {
-    int numChars = 0;
+    int nextByte;
+
+    //Verify there is a string up next
+    if((nextByte = fgetc(this->sourceFile)) != BYTECODE_TYPE_STRING) {
+        log_logMessage(FATAL, this->name, "Syntax error in string read - expected BYTECODE_TYPE_STRING (6), got %d", nextByte);
+        component_cleanUpAndStop(this, NULL);
+        return NULL;
+    }
 
     //Get length
+    int numChars = 0;
     while(fgetc(this->sourceFile) != '\0') {
         numChars++;
     }
@@ -1091,7 +1060,7 @@ char* component_readString(Component_PNTR this) {
     fseek(this->sourceFile, (numChars*-1)-1, SEEK_CUR);
 
     char* string = GC_alloc((size_t) (numChars+1), false);
-    int nextByte;
+
     numChars = 0;
     while((nextByte = fgetc(this->sourceFile)) != '\0') {
         string[numChars] = (char) nextByte;
@@ -1116,6 +1085,7 @@ TypedObject_PNTR component_readData(Component_PNTR this) {
         case BYTECODE_TYPE_BYTE:
             return TypedObject_construct(BYTECODE_TYPE_BYTE, component_readNBytes(this, 1));
         case BYTECODE_TYPE_STRING:
+            fseek(this->sourceFile, -1, SEEK_CUR); //Rewind for the TYPE byte
             return TypedObject_construct(BYTECODE_TYPE_STRING, component_readString(this));
         default:
             log_logMessage(ERROR, this->name, "Unrecognised type - %d", type);
