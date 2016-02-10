@@ -38,20 +38,34 @@
 #include "Channels/channel.h"
 #include "TypedObject.h"
 
+/**
+ * The main "Component" representation.
+ *
+ * This struct holds pointers to all the data an Insense Component needs to operate.
+ * All component instance methods will require a pointer to an instance of this struct.
+ */
 typedef struct Component Component_s, *Component_PNTR;
 struct Component {
-    void (*decRef)(Component_PNTR component);
-    char* name;
-    FILE* sourceFile;
-    pthread_t threadId;
-    IteratedList_PNTR parameters;
-    ScopeStack_PNTR scopeStack;
-    Stack_PNTR dataStack;
-    Stack_PNTR waitComponents;
-    ListMap_PNTR channels;
-    bool stop;
+    void (*decRef)(Component_PNTR component); //!< A pointer to the garbage collection function. Automatically set by constructor.
+    char* name;                               //!< Pointer to a char* with the Component's friendly name.
+    FILE* sourceFile;                         //!< Pointer to a file object with this component's bytecode source.
+    pthread_t threadId;                       //!< On Unix, the thread ID that this component is running in.
+    IteratedList_PNTR parameters;             //!< A list of parameters passed into this component.
+    ScopeStack_PNTR scopeStack;               //!< The scope stack, where local variables are stored.
+    Stack_PNTR dataStack;                     //!< The data stack, where date being operated on is stored.
+    Stack_PNTR waitComponents;                //!< Identifiers/Pointers to components started by this component, that must be waited on before this Component may terminate.
+    ListMap_PNTR channels;                    //!< List of channels used for inter-component communication.
+    bool stop;                                //!< If true, Component will terminate on next instruction.
 };
 
+/**
+ * Instantiate a new Component instance.
+ *
+ * @param[in] sourceFile The path of the file containing this Component's bytecode source.
+ * @param[in] params     A list of parameters, in the order expected by the component.
+ * 
+ * @return A newly created Component_PNTR. This object will require Garbage Collection.
+ */
 Component_PNTR component_newComponent(char *sourceFile, IteratedList_PNTR params);
 void* component_run(void* this);
 char* component_getName(Component_PNTR this);
