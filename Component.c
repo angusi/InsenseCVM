@@ -248,7 +248,7 @@ void component_component(Component_PNTR this) {
 #ifdef DEBUGGINGENABLED
             log_logMessage(DEBUG, this->name, "     Channel %d: %s", j, channel_name);
 #endif
-            Channel_PNTR new_channel = channel_create(channel_direction, TypedObject_getSize(channel_type), false);
+            Channel_PNTR new_channel = channel_create(channel_direction, TypedObject_getSize(channel_type));
             ChannelWrapper_PNTR channelWrapper = GC_alloc(sizeof(ChannelWrapper_s), false);
             channelWrapper->channel = new_channel;
             channelWrapper->type = channel_type;

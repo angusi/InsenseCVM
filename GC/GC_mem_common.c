@@ -98,8 +98,11 @@ void* GC_alloc(size_t size, bool mem_contains_pointers){
 	header->mem_contains_pointers = mem_contains_pointers;
 	header->mutex = GC_mutex;
 
-	//Only return the required memory
-	return (new_memory + sizeof(GC_Header_s));
+	//Only return the required memory.
+    //We cast new_memory to a char* for this operation, because
+    //  pointer arithmetic is forbidden on void pointers,
+    //  and we want to add a number of bytes (i.e. chars)
+	return ((char*)new_memory + sizeof(GC_Header_s));
 }
 
 /*
@@ -115,7 +118,10 @@ void GC_decRef(void* pntr) {
 		return;
 	}
 
-    GC_Header_PNTR header = (GC_Header_PNTR) (pntr - sizeof(GC_Header_s));
+    //We cast pntr to a char* for this operation, because
+    //  pointer arithmetic is forbidden on void pointers,
+    //  and we want to add a number of bytes (i.e. chars)
+    GC_Header_PNTR header = (GC_Header_PNTR) ((char*)pntr - sizeof(GC_Header_s));
 #ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, GARBAGE_COLLECTOR_NAME, GARBAGE_COLLECTOR_DECREFING, header, header->ref_count);
 #endif
@@ -148,7 +154,10 @@ void GC_incRef(void *pntr) {
         return;
     }
 
-    GC_Header_PNTR header = (GC_Header_PNTR) (pntr - sizeof(GC_Header_s));
+    //We cast pntr to a char* for this operation, because
+    //  pointer arithmetic is forbidden on void pointers,
+    //  and we want to add a number of bytes (i.e. chars)
+    GC_Header_PNTR header = (GC_Header_PNTR) ((char*)pntr - sizeof(GC_Header_s));
 #ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, GARBAGE_COLLECTOR_NAME, GARBAGE_COLLECTOR_INCREFING, header, header->ref_count);
 #endif
@@ -167,7 +176,10 @@ void GC_free(void *pntr){
         return;
 	}
 
-	GC_Header_PNTR header = (GC_Header_PNTR) (pntr - sizeof(GC_Header_s));
+    //We cast pntr to a char* for this operation, because
+    //  pointer arithmetic is forbidden on void pointers,
+    //  and we want to add a number of bytes (i.e. chars)
+	GC_Header_PNTR header = (GC_Header_PNTR) ((char*)pntr - sizeof(GC_Header_s));
 	if(header->ref_count > 0){
         log_logMessage(ERROR, GARBAGE_COLLECTOR_NAME, "Cannot free memory object that is still referenced.");
 		return;
@@ -180,6 +192,9 @@ void GC_free(void *pntr){
 }
 
 bool GC_mem_contains_pointers(void *pntr) {
-    GC_Header_PNTR header = (GC_Header_PNTR) (pntr - sizeof(GC_Header_s));
+    //We cast pntr to a char* for this operation, because
+    //  pointer arithmetic is forbidden on void pointers,
+    //  and we want to add a number of bytes (i.e. chars)
+    GC_Header_PNTR header = (GC_Header_PNTR) ((char*)pntr - sizeof(GC_Header_s));
     return header->mem_contains_pointers;
 }

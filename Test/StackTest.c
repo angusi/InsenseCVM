@@ -55,7 +55,7 @@ bool testConstructor() {
         printf(ANSI_COLOR_RED "Test failed - STACK CONSTRUCTOR" ANSI_COLOR_RESET "\n" );
         result = false;
     } else {
-        printf(ANSI_COLOR_GREEN "Test passed - STACK CONSTRUCTOR (%p)" ANSI_COLOR_RESET "\n" , stack);
+        printf(ANSI_COLOR_GREEN "Test passed - STACK CONSTRUCTOR (%p)" ANSI_COLOR_RESET "\n" , (void*)stack);
         result = true;
 
         GC_decRef(stack);
@@ -77,7 +77,7 @@ bool testPushItemOntoStack() {
         printf(ANSI_COLOR_RED "Test failed - STACK PUSH" ANSI_COLOR_RESET "\n");
         result = false;
     } else {
-        printf(ANSI_COLOR_GREEN "Test passed - STACK PUSH (%p)" ANSI_COLOR_RESET "\n", someInteger);
+        printf(ANSI_COLOR_GREEN "Test passed - STACK PUSH (%p)" ANSI_COLOR_RESET "\n", (void*)someInteger);
         result = true;
     }
 
@@ -119,7 +119,7 @@ bool testPushItemsOntoStack() {
     GC_decRef(stack);
 
     if(result) {
-        printf(ANSI_COLOR_GREEN "Test passed - STACK PUSH MULTIPLE (%p, %p)" ANSI_COLOR_RESET "\n", someInteger, someOtherInteger);
+        printf(ANSI_COLOR_GREEN "Test passed - STACK PUSH MULTIPLE (%p, %p)" ANSI_COLOR_RESET "\n", (void*)someInteger, (void*)someOtherInteger);
     } else {
         printf(ANSI_COLOR_RED "Test failed - STACK PUSH MULTIPLE" ANSI_COLOR_RESET "\n");
     }
@@ -141,7 +141,7 @@ bool testPopItemFromStack() {
         printf(ANSI_COLOR_RED "Test failed - STACK POP" ANSI_COLOR_RESET "\n");
         result = false;
     } else {
-        printf(ANSI_COLOR_GREEN "Test passed - STACK POP (%p,%p)" ANSI_COLOR_RESET "\n", someInteger, retrievedInteger);
+        printf(ANSI_COLOR_GREEN "Test passed - STACK POP (%p,%p)" ANSI_COLOR_RESET "\n", (void*)someInteger, (void*)retrievedInteger);
         result = true;
     }
 
@@ -186,7 +186,7 @@ bool testPopItemsFromStack() {
 
     if(result) {
         printf(ANSI_COLOR_GREEN "Test passed - STACK POP MULTIPLE ((%p,%p), (%p,%p))" ANSI_COLOR_RESET "\n",
-               someInteger, retrievedInteger, someOtherInteger, retrievedOtherInteger);
+               (void*)someInteger, (void*)retrievedInteger, (void*)someOtherInteger, (void*)retrievedOtherInteger);
     } else {
         printf(ANSI_COLOR_RED "Test failed - STACK POP MULTIPLE" ANSI_COLOR_RESET "\n");
     }
@@ -213,7 +213,7 @@ bool testPeekAtStack() {
         printf(ANSI_COLOR_RED "Test failed - STACK PEEK %d %d" ANSI_COLOR_RESET "\n", stack->stackTop, *retrievedInteger);
         result = false;
     } else {
-        printf(ANSI_COLOR_GREEN "Test passed - STACK PEEK (%p,%p)" ANSI_COLOR_RESET "\n", someInteger, retrievedInteger);
+        printf(ANSI_COLOR_GREEN "Test passed - STACK PEEK (%p,%p)" ANSI_COLOR_RESET "\n", (void*)someInteger, (void*)retrievedInteger);
         result = true;
     }
 

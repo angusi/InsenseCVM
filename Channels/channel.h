@@ -95,7 +95,7 @@ struct select_struct
 
 
 // channel functions
-extern Channel_PNTR channel_create(chan_dir direction, int typesize, bool contains_pointers);
+extern Channel_PNTR channel_create(chan_dir direction, int typesize);
 extern bool channel_bind(Channel_PNTR id1, Channel_PNTR id2);
 extern void channel_unbind(Channel_PNTR id);
 extern int channel_select(struct select_struct *s);

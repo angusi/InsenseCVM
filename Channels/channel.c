@@ -31,7 +31,7 @@ void initialise_sems_and_mutexes(Channel_PNTR this){
     my_sem_init(&(this->actually_received), 0);
 }
 
-Channel_PNTR channel_create(chan_dir direction, int typesize, bool contains_pointers) {
+Channel_PNTR channel_create(chan_dir direction, int typesize) {
 #ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, "Channels", "Creating channel");
 #endif
@@ -121,7 +121,7 @@ void channel_unbind(Channel_PNTR id) {
     // iterate through list, locking then disconnecting
     unsigned int length = IteratedList_getListLength(id->connections);
     Channel_PNTR opposite; // channel on the opposite side of current connection
-    int i;
+    unsigned int i;
     for(i = 0; i < length; i++) {
         opposite = IteratedList_getElementN(id->connections, i);	// fetch current opposite half-channel
 
@@ -156,6 +156,7 @@ void channel_unbind(Channel_PNTR id) {
 }
 
 int channel_select(struct select_struct *s) {
+    log_logMessage(WARNING, "Channels", "Called channel_select with struct %p, but this method always returns 0!", (void*)s);
     return 0;
 }
 
@@ -170,7 +171,7 @@ int channel_send(Channel_PNTR cout, void *data, void *ex_handler) {
     // iterate through connection list, looking for receiver that is ready
     unsigned int length = IteratedList_getListLength(cout->connections);
     Channel_PNTR match; // current receiver
-    int i;
+    unsigned int i;
     for(i = 0; i < length; i++) {
         match = IteratedList_getNextElement(cout->connections);	// fetch next channel in conns list (which keeps state across calls)
 
@@ -214,7 +215,7 @@ int channel_receive(Channel_PNTR cin, void *data, bool in_ack_after) {
     // iterate through connection list, looking for receiver that is ready
     unsigned int length = IteratedList_getListLength(cin->connections);
     Channel_PNTR match; // current receiver
-    int i;
+    unsigned int i;
     for(i = 0; i < length; i++) {
         match = IteratedList_getNextElement(cin->connections);	// fetch next channel in conns list (which keeps state across calls)
 

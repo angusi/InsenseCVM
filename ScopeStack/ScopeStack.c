@@ -59,7 +59,7 @@ void ScopeStack_declare(ScopeStack_PNTR this, char *name) {
 #ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, "ScopeStack", "Declaring %s in Scope Stack %p", name, this);
 #endif
-    return ListMap_declare(this->first->payload, name);
+    ListMap_declare(this->first->payload, name);
 }
 
 void* ScopeStack_load(ScopeStack_PNTR this, char *name) {
