@@ -70,33 +70,5 @@ struct Component {
  */
 Component_PNTR component_newComponent(char *sourceFile, IteratedList_PNTR params);
 void* component_run(void* this);
-char* component_getName(Component_PNTR this);
-
-//TODO: Should these be declared at head of C file instead of in H file?
-void component_cleanUpAndStop(Component_PNTR this, void* __retval);
-void component_enterScope(Component_PNTR this);
-void component_exitScope(Component_PNTR this);
-TypedObject_PNTR component_readData(Component_PNTR this);
-char* component_readString(Component_PNTR this);
-void* component_readNBytes(Component_PNTR this, size_t nBytes);
-Component_PNTR component_call(Component_PNTR this);
-void component_constructor(Component_PNTR this);
-void component_declare(Component_PNTR this);
-void component_store(Component_PNTR this);
-void component_load(Component_PNTR this);
-void component_component(Component_PNTR this);
-void component_push(Component_PNTR this);
-int component_skipToNext(Component_PNTR this, int bytecode);
-void component_jump(Component_PNTR this);
-void component_behaviourJump(Component_PNTR this);
-void component_expression(Component_PNTR this, int bytecode_op);
-void component_not(Component_PNTR this);
-void component_stop(Component_PNTR this);
-void component_ifClause(Component_PNTR this);
-void component_elseClause(Component_PNTR this);
-void component_connect(Component_PNTR this);
-void component_disconnect(Component_PNTR this);
-void component_send(Component_PNTR this);
-void component_receive(Component_PNTR this);
 
 #endif //CVM_COMPONENT_H

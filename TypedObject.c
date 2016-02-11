@@ -28,12 +28,34 @@
 
 static void TypedObject_decRef(TypedObject_PNTR pntr);
 
+struct TypedObject {
+    void (*decRef)(TypedObject_PNTR pntr);
+    int type;
+    void* object;
+};
+
 TypedObject_PNTR TypedObject_construct(unsigned int type, void* object) {
     TypedObject_PNTR newObject = GC_alloc(sizeof(TypedObject_s), true);
     newObject->type = type;
     GC_assign(&(newObject->object), object);
     newObject->decRef = TypedObject_decRef;
     return newObject;
+}
+
+void TypedObject_setObject(TypedObject_PNTR this, void* object) {
+    this->object = object;
+}
+
+void* TypedObject_getObject(TypedObject_PNTR this) {
+    return this->object;
+}
+
+void TypedObject_setTypeByteCode(TypedObject_PNTR this, unsigned int type) {
+    this->type = type;
+}
+
+int TypedObject_getTypeByteCode(TypedObject_PNTR this) {
+    return this->type;
 }
 
 void TypedObject_decRef(TypedObject_PNTR this) {

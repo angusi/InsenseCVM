@@ -29,7 +29,7 @@
  */
 
 
-#include "GC_mem.h"
+#include "GC_mem_private.h"
 #include "../Logger/Logger.h"
 #include "Strings.h"
 

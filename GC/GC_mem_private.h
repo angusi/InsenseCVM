@@ -1,7 +1,9 @@
 /*
  * 
  *
- * Copyright (c) 2015, Angus Ireland
+ * 
+ *
+ * Copyright (c) 2016, Angus Ireland
  * School of Computer Science, St. Andrews University
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,20 +24,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+#ifndef CVM_GC_MEM_PRIVATE_H
+#define CVM_GC_MEM_PRIVATE_H
 
-#ifndef CVM_TYPEDOBJECT_H
-#define CVM_TYPEDOBJECT_H
+#include "GC_mem.h"
 
-#include "GC/GC_mem.h"
+// mutex to serialise memory operation
+extern pthread_mutex_t* GC_mutex;
 
-typedef struct TypedObject TypedObject_s, *TypedObject_PNTR;
+typedef struct GC_Header {
+    unsigned long ref_count; // 64-bit architecture
+    bool mem_contains_pointers;
+    pthread_mutex_t* mutex;       // pntr to mutex to serialise memory operations
+} GC_Header_s, *GC_Header_PNTR;
 
-TypedObject_PNTR TypedObject_construct(unsigned int type, void* object);
-void TypedObject_setObject(TypedObject_PNTR this, void* object);
-void* TypedObject_getObject(TypedObject_PNTR this);
-void TypedObject_setTypeByteCode(TypedObject_PNTR this, unsigned int type);
-int TypedObject_getTypeByteCode(TypedObject_PNTR this);
-bool TypedObject_isNumber(TypedObject_PNTR this);
-size_t TypedObject_getSize(unsigned int type);
+// Every object crated by the garbage collector must have a function that decrements its reference count
+// and garbage collects when at 0 references. It must be pointed to by the first field.
+typedef struct GC_Container {
+    decRefFunc_t decRef;
+} GC_Container_s, *GC_Container_PNTR;
 
-#endif //CVM_TYPEDOBJECT_H
+#endif //CVM_GC_MEM_PRIVATE_H

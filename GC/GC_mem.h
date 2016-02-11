@@ -1,5 +1,9 @@
 /*
- * Memory management function declarations
+ * @file GC_mem.h
+ *
+ * Memory management declarations.
+ *
+ *
  *
  * Copyright (c) 2015, Angus Ireland
  * School of Computer Science, St. Andrews University
@@ -29,8 +33,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef GC_MEM_H_
-#define GC_MEM_H_
+#ifndef GC_MEM_H
+#define GC_MEM_H
 
 #include <stdbool.h>
 #include <stdlib.h>
@@ -39,21 +43,6 @@
 #include <string.h>
 
 typedef void (*decRefFunc_t)(void* pntr);
-
-// mutex to serialise memory operation
-extern pthread_mutex_t* GC_mutex;
-
-typedef struct GC_Header {
-	unsigned long ref_count; // 64-bit architecture
-	bool mem_contains_pointers;
-	pthread_mutex_t* mutex;       // pntr to mutex to serialise memory operations
-} GC_Header_s, *GC_Header_PNTR;
-
-// Every object crated by the garbage collector must have a function that decrements its reference count
-// and garbage collects when at 0 references. It must be pointed to by the first field.
-typedef struct GC_Container {
-	decRefFunc_t decRef;
-} GC_Container_s, *GC_Container_PNTR;
 
 extern void GC_init();
 extern void GC_assign(void *generic_var_pntr, void *new_mem);
@@ -65,4 +54,4 @@ extern void GC_decRef(void* pntr);
 extern void GC_incRef(void* pntr);
 extern void GC_free(void* pntr);
 
-#endif /*GC_MEM_H_*/
+#endif /*GC_MEM_H*/
