@@ -31,11 +31,11 @@
 #if defined(WIN32) || defined(_WIN32)
 static const char PATH_SEPARATOR = '\\';
 #else
-static const char PATH_SEPARATOR = '/';
+#define PATH_SEPARATOR '/'
 #endif
 
-static const char* PROGRAM_NAME = "Insense C Virtual Machine";
-static const char* PROGRAM_VERSION = "0.0.1";
-static const char* PROGRAM_USAGE = "Usage: %s <program directory> [-l (DEBUG|INFO|WARNING|ERROR|FATAL)]\n";
+#define PROGRAM_NAME "Insense C Virtual Machine"
+#define PROGRAM_VERSION "0.0.1"
+#define PROGRAM_USAGE "Usage: %s <program directory> [-l (DEBUG|INFO|WARNING|ERROR|FATAL)]\n"
 
 #endif //CVM_STRINGS_H

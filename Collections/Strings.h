@@ -27,18 +27,18 @@
 #define CVM_STRINGS_H
 
 
-static const char* ITERATED_LIST_NAME = "Iterated List";
-static const char*ITERATED_LIST_CONSTRUCT_LIST_FAILED = "Could not construct new Iterated List";
-static const char* ITERATED_LIST_CONSTRUCT_NODE_FAILED = "Could not construct new Iterated List Node";
-static const char* ITERATED_LIST_NULL_POINTER = "List pointer is null";
-static const char* ITERATED_LIST_NULL_ELEMENT = "List element is null";
-static const char* ITERATED_LIST_INDEX_OUT_OF_BOUNDS = "List index out of bounds or list is empty";
-static const char* ITERATED_LIST_ELEMENT_NOT_FOUND = "Element not found";
+#define ITERATED_LIST_NAME "Iterated List"
+#define ITERATED_LIST_CONSTRUCT_LIST_FAILED "Could not construct new Iterated List"
+#define ITERATED_LIST_CONSTRUCT_NODE_FAILED "Could not construct new Iterated List Node"
+#define ITERATED_LIST_NULL_POINTER "List pointer is null"
+#define ITERATED_LIST_NULL_ELEMENT "List element is null"
+#define ITERATED_LIST_INDEX_OUT_OF_BOUNDS "List index out of bounds or list is empty"
+#define ITERATED_LIST_ELEMENT_NOT_FOUND "Element not found"
 
 #ifdef DEBUGGINGENABLED
-static const char* ITERATED_LIST_DECREF = "decRef List";
-static const char* ITERATED_LIST_NODE_DECREF = "decRef Node";
-static const char* ITERATED_LIST_FREEING_NODE = "Freeing node at %p";
+#define ITERATED_LIST_DECREF "decRef List"
+#define ITERATED_LIST_NODE_DECREF "decRef Node"
+#define ITERATED_LIST_FREEING_NODE "Freeing node at %p"
 #endif
 
 #endif //CVM_STRINGS_H
