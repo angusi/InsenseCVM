@@ -1,4 +1,5 @@
 /*
+ * @file Component.c
  * Component operations.
  *
  * Components may be instantiated and run from this code.
@@ -25,9 +26,11 @@
  * THE SOFTWARE.
  */
 
+#include <unistd.h>
 #include "Component.h"
 #include "BytecodeTable.h"
 #include "Main.h"
+#include "ChannelWrapper.h"
 
 static void Component_decRef(Component_PNTR pntr);
 
@@ -58,6 +61,8 @@ Component_PNTR component_newComponent(char *sourceFile, IteratedList_PNTR params
     this->channels = ListMap_constructor();
 
     this->stop = false;
+
+    this->running = false;
 
     log_logMessage(INFO, this->name, "Component Created");
 
@@ -244,8 +249,14 @@ void component_component(Component_PNTR this) {
             log_logMessage(DEBUG, this->name, "     Channel %d: %s", j, channel_name);
 #endif
             Channel_PNTR new_channel = channel_create(channel_direction, TypedObject_getSize(channel_type), false);
+            ChannelWrapper_PNTR channelWrapper = GC_alloc(sizeof(ChannelWrapper_s), false);
+            channelWrapper->channel = new_channel;
+            channelWrapper->type = channel_type;
             ListMap_declare(this->channels, channel_name);
-            ListMap_put(this->channels, channel_name, new_channel);
+            if(!ListMap_put(this->channels, channel_name, channelWrapper)) {
+                log_logMessage(FATAL, this->name, "Channel List refused to store the channel for an unknown reason.");
+                component_cleanUpAndStop(this, NULL);
+            };
             GC_decRef(channel_name);
         }
     }
@@ -357,6 +368,9 @@ void component_constructor(Component_PNTR this) {
             this->parameters = NULL;
         }
         GC_decRef(readParams);
+
+        //Component is now fully executable
+        this->running = true;
     } else {
         log_logMessage(INFO, this->name, " Constructor mismatch, fastforwarding");
 
@@ -399,7 +413,10 @@ void component_store(Component_PNTR this) {
     log_logMessage(DEBUG, this->name, "   Storing %s", name);
 #endif
 
-    ScopeStack_store(this->scopeStack, name, Stack_pop(this->dataStack));
+    if(ScopeStack_store(this->scopeStack, name, Stack_pop(this->dataStack)) != 0) {
+        log_logMessage(FATAL, this->name, "  Unable to store data.");
+        component_cleanUpAndStop(this, NULL);
+    }
     GC_decRef(name);
 }
 
@@ -427,7 +444,12 @@ void component_load(Component_PNTR this) {
     log_logMessage(DEBUG, this->name, "   Loading %s", name);
 #endif
 
-    Stack_push(this->dataStack, ScopeStack_load(this->scopeStack, name));
+    void* data = ScopeStack_load(this->scopeStack, name);
+    if(data == NULL) {
+        log_logMessage(FATAL, this->name, "Unable to load variable %s.", name);
+        component_cleanUpAndStop(this, NULL);
+    }
+    Stack_push(this->dataStack, data);
     GC_decRef(name);
 }
 
@@ -937,12 +959,21 @@ void component_connect(Component_PNTR this) {
     }
 
     char *name1 = component_readString(this);
-    Channel_PNTR channel1 = ListMap_get(this->channels, name1);
+
+    while(!((Component_PNTR)component1->object)->running) {
+        //TODO: This is probably not the right way to pause here.
+        sleep(1);
+    }
+    ChannelWrapper_PNTR channel1 = ListMap_get(((Component_PNTR)component1->object)->channels, name1);
 
     if(channel1 == NULL) {
         log_logMessage(FATAL, this->name, "Error in CONNECT - channel %s not found", name1);
         component_cleanUpAndStop(this, NULL);
     }
+
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, this->name, "  Found channel %s on component %s", name1, ((Component_PNTR)component1->object)->name);
+#endif
 
     component_load(this);
     TypedObject_PNTR component2 = Stack_pop(this->dataStack);
@@ -954,14 +985,24 @@ void component_connect(Component_PNTR this) {
     }
 
     char *name2 = component_readString(this);
-    Channel_PNTR channel2 = ListMap_get(this->channels, name2);
+
+    while(!((Component_PNTR)component2->object)->running) {
+        //Todo: This is probably not the right way to pause here
+        sleep(1);
+    }
+
+    ChannelWrapper_PNTR channel2 = ListMap_get(((Component_PNTR)component2->object)->channels, name2);
 
     if(channel2 == NULL) {
         log_logMessage(FATAL, this->name, "Error in CONNECT - channel %s not found", name2);
         component_cleanUpAndStop(this, NULL);
     }
 
-    channel_bind(channel1, channel2); //Ordering is unimportant for this function call
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, this->name, "  Found channel %s on component %s", name2, ((Component_PNTR)component2->object)->name);
+#endif
+
+    channel_bind(channel1->channel, channel2->channel); //Ordering is unimportant for this function call
 
 #ifdef DEBUGGINGENABLED
         log_logMessage(DEBUG, this->name, "  Channel %s and %s connected", name1, name2);
@@ -983,14 +1024,14 @@ void component_disconnect(Component_PNTR this) {
     }
 
     char *name1 = component_readString(this);
-    Channel_PNTR channel1 = ListMap_get(this->channels, name1);
+    ChannelWrapper_PNTR channel1 = ListMap_get(((Component_PNTR)component1)->channels, name1);
 
     if (channel1 == NULL) {
         log_logMessage(FATAL, this->name, "Error in DISCONNECT - channel %s not found", name1);
         component_cleanUpAndStop(this, NULL);
     }
 
-    channel_unbind(channel1);
+    channel_unbind(channel1->channel);
 
 #ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, this->name, "  Channel %s disconnected", name1);
@@ -1006,15 +1047,19 @@ void component_send(Component_PNTR this) {
 #ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, this->name, "    Sending on %s", name1);
 #endif
-    Channel_PNTR channel1 = ListMap_get(this->channels, name1);
+    ChannelWrapper_PNTR channel1 = ListMap_get(this->channels, name1);
 
     if(channel1 == NULL) {
         log_logMessage(FATAL, this->name, "Error in SEND - couldn't find channel named %s", name1);
         component_cleanUpAndStop(this, NULL);
     }
 
-    //TODO: This is not right - we surely want to send/receive the actual data, not the wrapper!
-    channel_send(channel1, Stack_pop(this->dataStack), NULL);
+    TypedObject_PNTR poppedData = Stack_pop(this->dataStack);
+    channel_send(channel1->channel, poppedData->object, NULL);
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, this->name, "    Sent object of type %d (loc: %p) on %s", poppedData->type, poppedData->object, name1);
+#endif
+    GC_decRef(poppedData);
 }
 
 void component_receive(Component_PNTR this) {
@@ -1023,12 +1068,18 @@ void component_receive(Component_PNTR this) {
 #endif
 
     char *name1 = component_readString(this);
-    Channel_PNTR channel1 = ListMap_get(this->channels, name1);
+    ChannelWrapper_PNTR channel1 = ListMap_get(this->channels, name1);
 
-    //TODO: This is not right - we surely want to send/receive the actual data, not the wrapper!
     TypedObject_PNTR receivedWrapper = GC_alloc(sizeof(TypedObject_PNTR), true);
-    channel_receive(channel1, receivedWrapper, false);
+    void* receivedData = GC_alloc(TypedObject_getSize(channel1->type), false);
+    receivedWrapper->type = channel1->type;
+    receivedWrapper->object = receivedData;
+
+    channel_receive(channel1->channel, receivedData, false);
     Stack_push(this->dataStack, receivedWrapper);
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, this->name, "    Received object of type %d (loc: %p) on %s", receivedWrapper->type, receivedWrapper->object, name1);
+#endif
 }
 
 

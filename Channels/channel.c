@@ -67,9 +67,8 @@ void Channel_decRef(Channel_PNTR this){
 
 
 bool channel_bind(Channel_PNTR id1, Channel_PNTR id2) {
-#ifdef DEBUGGINGENABLED
-    log_logMessage(DEBUG, "Channels", "Bind channels ID1: %d and ID2: %d\n", id1, id2);
-#endif
+    log_logMessage(INFO, "Channels", "Binding channels ID1: %d and ID2: %d", id1, id2);
+
     pthread_mutex_lock(&conn_op_mutex);
 
     // check not both CHAN_IN or CHAN_OUT
@@ -116,6 +115,8 @@ bool channel_bind(Channel_PNTR id1, Channel_PNTR id2) {
 
 void channel_unbind(Channel_PNTR id) {
     pthread_mutex_lock(&conn_op_mutex);
+
+    log_logMessage(INFO, "Channels", "Unbinding channel ID: %d", id);
 
     // iterate through list, locking then disconnecting
     unsigned int length = IteratedList_getListLength(id->connections);

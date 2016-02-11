@@ -63,7 +63,7 @@
 #define BYTECODE_LESSEQUAL       13
 #define BYTECODE_MORE            14
 #define BYTECODE_MOREEQUAL       15
-#define BYTECODE_EQUAL            16
+#define BYTECODE_EQUAL           16
 #define BYTECODE_UNEQUAL         17
 #define BYTECODE_AND             18
 #define BYTECODE_OR              19

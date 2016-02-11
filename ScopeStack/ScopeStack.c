@@ -75,7 +75,7 @@ void* ScopeStack_load(ScopeStack_PNTR this, char *name) {
         return element;
     } else {
         thisLevel = thisLevel->tail;
-        while(thisLevel != first) {
+        while(thisLevel != first && thisLevel != NULL) {
             element = ListMap_get(thisLevel->payload, name);
             if(element != NULL) {
                 return element;
@@ -88,7 +88,7 @@ void* ScopeStack_load(ScopeStack_PNTR this, char *name) {
     return NULL;
 }
 
-void ScopeStack_store(ScopeStack_PNTR this, char *name, void *value) {
+int ScopeStack_store(ScopeStack_PNTR this, char *name, void *value) {
 #ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, "ScopeStack", "Store %p as %s in Scope Stack %p", value, name, this);
 #endif
@@ -97,14 +97,18 @@ void ScopeStack_store(ScopeStack_PNTR this, char *name, void *value) {
     IteratedListNode_PNTR thisLevel = first;
 
     if(ListMap_put(thisLevel->payload, name, value)) {
-        log_logMessage(INFO, "ScopeStack", "  Successfully found and stored data in key %s", name);
-        return;
+#ifdef DEBUGGINGENABLED
+        log_logMessage(DEBUG, "ScopeStack", "  Successfully found and stored data in key %s", name);
+#endif
+        return 0;
     } else {
         thisLevel = thisLevel->tail;
         while(thisLevel != first) {
             if(ListMap_put(thisLevel->payload, name, value)) {
-                log_logMessage(INFO, "ScopeStack", "  Successfully found and stored data in key %s", name);
-                return;
+#ifdef DEBUGGINGENABLED
+                log_logMessage(DEBUG, "ScopeStack", "  Successfully found and stored data in key %s", name);
+#endif
+                return 0;
             } else {
                 thisLevel = thisLevel->tail;
             }
@@ -112,5 +116,5 @@ void ScopeStack_store(ScopeStack_PNTR this, char *name, void *value) {
     }
 
     log_logMessage(ERROR, "ScopeStack", "  Undeclared variable %s", name);
-    return;
+    return -1;
 }

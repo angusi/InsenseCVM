@@ -1,4 +1,5 @@
 /*
+ * @file Main.c
  * Insense C Virtual Machine.
  *
  * An implementation in C of a Virtual Machine for Insense Bytecode programs.
@@ -35,6 +36,11 @@
 
 char* directory;
 
+/**
+ * Main program entry point.
+ *
+ *
+ */
 int main(int argc, char* argv[]) {
     printf("%s %s\n", PROGRAM_NAME, PROGRAM_VERSION);
     log_init();

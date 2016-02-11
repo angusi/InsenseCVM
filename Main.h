@@ -1,4 +1,6 @@
-/*
+/**
+ * @file Main.h
+ *
  * Insense C Virtual Machine.
  *
  * An implementation in C of a Virtual Machine for Insense Bytecode programs.

@@ -36,17 +36,19 @@ ListMap_PNTR ListMap_constructor() {
 }
 
 void ListMap_declare(ListMap_PNTR listMap, char *key) {
-    ListMapEntry_PNTR newEntry = GC_alloc(sizeof(ListMapEntry_s), true);
-    newEntry->key = GC_alloc(strlen(key) + 1, false);
-    strncpy(newEntry->key, key, strlen(key));
+    if(ListMap_get(listMap, key)== NULL) { //Cannot "redeclare" a variable
+        ListMapEntry_PNTR newEntry = GC_alloc(sizeof(ListMapEntry_s), true);
+        newEntry->key = GC_alloc(strlen(key) + 1, false);
+        strncpy(newEntry->key, key, strlen(key));
 
-    //No need, since GC_alloc 0's memory for us:
-    //newEntry->value = NULL;
+        //No need, since GC_alloc 0's memory for us:
+        //newEntry->value = NULL;
 
-    newEntry->decRef = ListMapEntry_decRef;
+        newEntry->decRef = ListMapEntry_decRef;
 
-    IteratedList_insertElement(listMap, newEntry);
-    //GC_decRef(newEntry);
+        IteratedList_insertElement(listMap, newEntry);
+        //GC_decRef(newEntry);
+    }
 }
 
 int ListMap_isDesiredElement(void *element, void *key) {
@@ -66,7 +68,9 @@ bool ListMap_put(ListMap_PNTR listMap, char *key, void *value) {
     ListMapEntry_PNTR varElement = IteratedList_searchList(listMap, ListMap_isDesiredElement, key);
 
     if(varElement == NULL) {
-        log_logMessage(INFO, "ListMap", "Tried to put data in unknown key %s", key);
+#ifdef DEBUGGINGENABLED
+        log_logMessage(DEBUG, "ListMap", "Tried to put data in unknown key %s", key);
+#endif
         return false;
     }
 

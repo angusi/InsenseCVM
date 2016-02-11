@@ -1,8 +1,9 @@
 /*
- * Scope Stacks manage variable scoping.
- * Scope levels are created to store variables, and when they are destroyed those variables are also destroyed.
+ * @file ChannelWrapper.h
  *
- * Copyright (c) 2015, Angus Ireland
+ * Wraps the (Unix) Runtime's implementation of a channel for storage with a Component object.
+ *
+ * Copyright (c) 2016, Angus Ireland
  * School of Computer Science, St. Andrews University
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,22 +23,16 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
- */
+ */#ifndef CVM_CHANNELWRAPPER_H
+#define CVM_CHANNELWRAPPER_H
 
-#ifndef CVM_SCOPESTACK_H
-#define CVM_SCOPESTACK_H
+#include <stddef.h>
+#include "Channels/channel.h"
 
-#include "../Collections/Stack.h"
-#include "../Collections/ListMap.h"
+typedef struct ChannelWrapper ChannelWrapper_s, *ChannelWrapper_PNTR;
+struct ChannelWrapper {
+    unsigned int type;
+    Channel_PNTR channel;
+};
 
-typedef IteratedList_PNTR ScopeStack_PNTR, ScopeLevel_PNTR;
-
-ScopeStack_PNTR ScopeStack_enterScope(ScopeStack_PNTR this);
-void ScopeStack_exitScope(ScopeStack_PNTR this);
-int ScopeStack_size(ScopeStack_PNTR this);
-
-void ScopeStack_declare(ScopeStack_PNTR this, char *name);
-void* ScopeStack_load(ScopeStack_PNTR this, char *name);
-int ScopeStack_store(ScopeStack_PNTR this, char *name, void *value);
-
-#endif //CVM_SCOPESTACK_H
+#endif //CVM_CHANNELWRAPPER_H
