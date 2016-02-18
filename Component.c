@@ -625,7 +625,7 @@ void component_expression(Component_PNTR this, int bytecode_op) {
     } else if(bytecode_op == BYTECODE_LESS || bytecode_op == BYTECODE_LESSEQUAL || bytecode_op == BYTECODE_EQUAL
             || bytecode_op == BYTECODE_MOREEQUAL || bytecode_op == BYTECODE_MORE || bytecode_op == BYTECODE_UNEQUAL) {
 #ifdef DEBUGGINGENABLED
-        log_logMessage(DEBUG, this->name, "    LESS");
+        log_logMessage(DEBUG, this->name, "    COMPARISON");
 #endif
         if(!TypedObject_isNumber(first) || !TypedObject_isNumber(second)) {
             log_logMessage(FATAL, this->name, "Syntax error in EXPR %u - Operand Type Mismatched", bytecode_op);
@@ -646,13 +646,13 @@ void component_expression(Component_PNTR this, int bytecode_op) {
         }
 
         if(TypedObject_getTypeByteCode(second) == BYTECODE_TYPE_REAL) {
-            castSecond = *(double*)TypedObject_getObject(first);
+            castSecond = *(double*)TypedObject_getObject(second);
         } else if(TypedObject_getTypeByteCode(second) == BYTECODE_TYPE_UNSIGNED_INTEGER) {
-            castSecond = (double)*(unsigned int*)TypedObject_getObject(first);
+            castSecond = (double)*(unsigned int*)TypedObject_getObject(second);
         } else if(TypedObject_getTypeByteCode(second) == BYTECODE_TYPE_INTEGER) {
-            castSecond = (double)*(int*)TypedObject_getObject(first);
+            castSecond = (double)*(int*)TypedObject_getObject(second);
         } else if(TypedObject_getTypeByteCode(second) == BYTECODE_TYPE_BYTE) {
-            castSecond = (double)*(char*)TypedObject_getObject(first);
+            castSecond = (double)*(char*)TypedObject_getObject(second);
         }
 
         result = TypedObject_construct(BYTECODE_TYPE_BOOL, GC_alloc(sizeof(bool), false));
@@ -877,6 +877,9 @@ void component_connect(Component_PNTR this) {
 #ifdef DEBUGGINGENABLED
         log_logMessage(DEBUG, this->name, "  Channel %s and %s connected", name1, name2);
 #endif
+
+    GC_decRef(name1);
+    GC_decRef(name2);
 }
 
 void component_disconnect(Component_PNTR this) {
@@ -906,6 +909,8 @@ void component_disconnect(Component_PNTR this) {
 #ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, this->name, "  Channel %s disconnected", name1);
 #endif
+
+    GC_decRef(name1);
 }
 
 void component_send(Component_PNTR this) {
@@ -929,7 +934,9 @@ void component_send(Component_PNTR this) {
 #ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, this->name, "    Sent object of type %d (loc: %p) on %s", TypedObject_getTypeByteCode(poppedData), TypedObject_getObject(poppedData), name1);
 #endif
+
     GC_decRef(poppedData);
+    GC_decRef(name1);
 }
 
 void component_receive(Component_PNTR this) {
@@ -949,6 +956,8 @@ void component_receive(Component_PNTR this) {
 #ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, this->name, "    Received object of type %d (loc: %p) on %s", TypedObject_getTypeByteCode(receivedWrapper), TypedObject_getObject(receivedWrapper), name1);
 #endif
+
+    GC_decRef(name1);
 }
 
 
@@ -1105,18 +1114,20 @@ static void Component_decRef(Component_PNTR this) {
 #ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, this->name, "Decrementing reference to component");
 #endif
-    log_logMessage(DEBUG, this->name, "   Cleaning Wait Components [1/5]");
+    log_logMessage(DEBUG, this->name, "   Cleaning Wait Components [1/6]");
     if(this->waitComponents != NULL) {
         GC_decRef(this->waitComponents);
     }
-    log_logMessage(DEBUG, this->name, "   Cleaning Parameters [2/5]");
+    log_logMessage(DEBUG, this->name, "   Cleaning Parameters [2/6]");
     if(this->parameters != NULL) {
         GC_decRef(this->parameters);
     }
-    log_logMessage(DEBUG, this->name, "   Cleaning Scope Stack [3/5]");
+    log_logMessage(DEBUG, this->name, "   Cleaning Scope Stack [3/6]");
     GC_decRef(this->scopeStack);
-    log_logMessage(DEBUG, this->name, "   Cleaning Data Stack [4/5]");
+    log_logMessage(DEBUG, this->name, "   Cleaning Data Stack [4/6]");
     GC_decRef(this->dataStack);
-    log_logMessage(DEBUG, this->name, "   Cleaning Name [5/5]");
+    log_logMessage(DEBUG, this->name, "   Cleaning Channels [5/6]");
+    GC_decRef(this->channels);
+    log_logMessage(DEBUG, this->name, "   Cleaning Name [6/6]");
     GC_decRef(this->name);
 }
