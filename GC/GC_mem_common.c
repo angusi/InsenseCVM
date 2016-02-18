@@ -1,4 +1,5 @@
 /*
+ * @file GC_mem_common.c
  * Memory-management functions
  *
  * Copyright (c) 2015, Angus Ireland
@@ -36,6 +37,14 @@
 // mutex to serialise memory operation when using a shared heap
 pthread_mutex_t* GC_mutex;
 
+void GC_free(void* pntr);
+
+/**
+ * Initialise the Garbage Collection subsystem.
+ *
+ * This method must be called (once) before Garbage Collection may be used.
+ * Subsequent calls to this method are ignored.
+ */
 void GC_init() {
     if(GC_mutex == NULL) {
         GC_mutex = malloc(sizeof(pthread_mutex_t));
@@ -44,6 +53,14 @@ void GC_init() {
     }
 }
 
+/**
+ * Assigns memory from one location to a pointer for another location.
+ *
+ * The reference to the old memory is removed, and the new memory takes its place.
+ *
+ * @param[in,out] generic_var_pntr The old memory location. Old contents may be cleared if no more references are known of.
+ * @param[in] new_mem The new memory location to replace the old memory with.
+ */
 void GC_assign(void *generic_var_pntr, void *new_mem) {
 
     void **var_pntr = (void **) generic_var_pntr;
@@ -73,10 +90,13 @@ void GC_assign(void *generic_var_pntr, void *new_mem) {
 
 /**
  * Allocate space in memory for a new, garbage collected object.
- * The memory is automatically zero'd.
+ *
+ * The newly allocated memory is automatically zero'd.
  *
  * @param[in] size The size, in bytes, to allocate
  * @param[in] mem_contains_pointers If this memory will contain pointers, set to true.
+ *
+ * @return A pointer to the newly allocated memory, or NULL if memory could not be allocated.
  */
 void* GC_alloc(size_t size, bool mem_contains_pointers){
 	//Allocate memory (required memory + GC overhead)
@@ -109,7 +129,7 @@ void* GC_alloc(size_t size, bool mem_contains_pointers){
  * Decrements references to a given memory object.
  * If the object has no references left, also garbage collects it.
  *
- * @param[in] pntr Pointer to object to decrement references to.
+ * @param[in,out] pntr Pointer to object to decrement references to. Data at this pointer may become unusable after this call if there are no other references known about.
  */
 void GC_decRef(void* pntr) {
 
@@ -147,6 +167,8 @@ void GC_decRef(void* pntr) {
 
 /*
  * Increments reference count for memory referenced by pntr.
+ *
+ * @param[in] pntr The memory location to add a reference count to.
  */
 void GC_incRef(void *pntr) {
     if(pntr==NULL){
@@ -167,7 +189,11 @@ void GC_incRef(void *pntr) {
 }
 
 /*
- * Frees memory assigned by DAL_alloc and referenced by pntr.
+ * Frees memory assigned by GC_alloc and referenced by pntr.
+ *
+ * If this method is called on memory that still has references, it will trigger an error and no action will be taken.
+ *
+ * @param[in,out] pntr The location to free.
  */
 void GC_free(void *pntr){
 
@@ -191,6 +217,12 @@ void GC_free(void *pntr){
 	free(header);
 }
 
+/**
+ * Check whether a given pointer contains pointers to other memory or is self-contained.
+ *
+ * @param[in] pntr The pointer to check for pointers!
+ * @return True if pointers are contained, False otherwise.
+ */
 bool GC_mem_contains_pointers(void *pntr) {
     //We cast pntr to a char* for this operation, because
     //  pointer arithmetic is forbidden on void pointers,

@@ -52,6 +52,5 @@ extern bool GC_mem_contains_pointers(void* pntr);
 //extern void GC_mem_set_contains_pointers(void* pntr, bool mem_contains_pointers);
 extern void GC_decRef(void* pntr);
 extern void GC_incRef(void* pntr);
-extern void GC_free(void* pntr);
 
 #endif /*GC_MEM_H*/
