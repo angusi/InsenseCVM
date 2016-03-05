@@ -56,6 +56,7 @@ struct Component {
     Stack_PNTR dataStack;                     //!< The data stack, where date being operated on is stored.
     Stack_PNTR waitComponents;                //!< Identifiers/Pointers to components started by this component, that must be waited on before this Component may terminate.
     ListMap_PNTR channels;                    //!< List of channels used for inter-component communication.
+    ListMap_PNTR procs;                       //!< List of procedures and their byte positions in this component.
     bool stop;                                //!< If true, Component will terminate on next instruction.
     bool running;                             //!< Certain operations require the component to be fully initialised. True on this flag indicates this status.
 };

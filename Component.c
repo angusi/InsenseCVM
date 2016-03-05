@@ -31,6 +31,7 @@
 #include "BytecodeTable.h"
 #include "Main.h"
 #include "ChannelWrapper.h"
+#include "Procedure.h"
 
 static void Component_decRef(Component_PNTR pntr);
 
@@ -59,6 +60,9 @@ void component_connect(Component_PNTR this);
 void component_disconnect(Component_PNTR this);
 void component_send(Component_PNTR this);
 void component_receive(Component_PNTR this);
+void component_proc(Component_PNTR this);
+void component_procCall(Component_PNTR this);
+void component_procReturn(Component_PNTR this);
 
 /**
  * Construct a new component object
@@ -177,6 +181,18 @@ void* component_run(void* component) {
                 break;
             case BYTECODE_RECEIVE:
                 component_receive(this);
+                break;
+            case BYTECODE_PROC:
+                component_proc(this);
+                break;
+            case BYTECODE_BLOCKEND:
+                //No-op
+                break;
+            case BYTECODE_PROCCALL:
+                component_procCall(this);
+                break;
+            case BYTECODE_RETURN:
+                component_procReturn(this);
                 break;
             default:
                 log_logMessage(ERROR, this->name, "Unknown Byte Read - %u", nextByte);
@@ -342,6 +358,16 @@ void component_constructor(Component_PNTR this) {
 #ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, this->name, "CONSTRUCTOR");
 #endif
+
+    if(this->running) {
+#ifdef DEBUGGINGENABLED
+        log_logMessage(DEBUG, this->name, "   Skipping since already constructed");
+#endif
+        //Component already constructed, skip over constructor.
+        component_skipToNext(this, BYTECODE_BLOCKEND);
+        fgetc(this->sourceFile); //Consume the BLOCKEND
+    }
+
     bool thisConstructor = true;
     IteratedList_PNTR readParams = NULL;
 
@@ -960,6 +986,98 @@ void component_receive(Component_PNTR this) {
     GC_decRef(name1);
 }
 
+void component_proc(Component_PNTR this) {
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, this->name, "PROC DECL");
+#endif
+    if(this->procs == NULL) {
+        this->procs = ListMap_constructor();
+    }
+
+    char* procName = component_readString(this);
+    Procedure_PNTR newProcedure = Procedure_construct(procName);
+
+    int parameters = fgetc(this->sourceFile);			// NUMBER_OF_PARAMETERS
+    log_logMessage(WARNING, this->name, "    %d params", parameters);
+    for( int i = 0; i < parameters; i++ ) {
+        //TODO: Currently we just ignore the param types
+#ifdef DEBUGGINGENABLED
+        log_logMessage(DEBUG, this->name, "    Type is %d", fgetc(this->sourceFile));    // TYPE_OF_PARAMETER
+#else
+        fgetc(this->sourceFile);
+#endif
+        Procedure_addParameter(newProcedure, component_readString(this));               //NAME_OF_PARAMATER
+    }
+
+    //We get the position _after_ reading the params, and add 1, so that when we skip
+    // back here, we are at the first line of actual code of this procedure.
+    Procedure_setPosition(newProcedure, ftell(this->sourceFile));
+
+    ListMap_declare(this->procs, procName);
+    ListMap_put(this->procs, procName, newProcedure);
+
+    component_skipToNext(this, BYTECODE_BLOCKEND);
+    fgetc(this->sourceFile); //Consume the BLOCKEND
+}
+
+void component_procCall(Component_PNTR this) {
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, this->name, "PROC CALL");
+#endif
+
+    char* procName = component_readString(this);
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, this->name, "     %s", procName);
+#endif
+
+    Procedure_PNTR proc = ListMap_get(this->procs, procName);
+    if(proc == NULL) {
+        //TODO: Check stdenv for procedure
+        log_logMessage(FATAL, this->name, "Procedure not found! Terminating.");
+        component_cleanUpAndStop(this, NULL);
+    }
+
+    //Enter a new scope level, and put the return address (i.e. the current next byte index) in
+    component_enterScope(this);
+
+    long* fPos = GC_alloc(sizeof(long), false);
+    *fPos = ftell(this->sourceFile);
+    ScopeStack_declare(this->scopeStack, "_returnAddress");
+    ScopeStack_store(this->scopeStack, "_returnAddress", fPos);
+
+    //Then add all the parameters into the scope
+    IteratedList_PNTR paramNames = Procedure_getParameters(proc);
+    for(unsigned int i = 0; i < IteratedList_getListLength(paramNames); i++) {
+        //TODO: Check GC Ref counts of pop/store/getElement values
+        char* name = IteratedList_getElementN(paramNames, i);
+        ScopeStack_declare(this->scopeStack, name);
+        ScopeStack_store(this->scopeStack, name, Stack_pop(this->dataStack));
+    }
+
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, this->name, "     Seeking to byte %ld", Procedure_getPosition(proc));
+#endif
+    fseek(this->sourceFile, Procedure_getPosition(proc), SEEK_SET);
+}
+
+void component_procReturn(Component_PNTR this) {
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, this->name, "RETURN");
+#endif
+
+    //Get the return address from the scopestack
+    long* newPos = ScopeStack_load(this->scopeStack, "_returnAddress");
+
+    //Clear the scope stack for the procedure
+    //TODO: Exit any extra levels of scope entered within the block
+    component_exitScope(this);
+
+    //Jump back to caller
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, this->name, "    Seeking to byte %ld", *newPos);
+#endif
+    fseek(this->sourceFile, *newPos, SEEK_SET);
+}
 
 //------
 
@@ -1033,11 +1151,11 @@ int component_skipToNext(Component_PNTR this, int bytecode) {
                 GC_decRef(component_readString(this));	// COMPONENT_NAME
                 break;
             case BYTECODE_PUSH:
-                GC_decRef(component_readString(this));	// VALUE
+                GC_decRef(component_readData(this));    // TYPE, DATA
                 break;
             case BYTECODE_DECLARE:
-                GC_decRef(component_readString(this));				// VARIABLE_NAME
-                component_readNBytes(this, 1);	// VARIABLE_TYPE
+                GC_decRef(component_readString(this));	// VARIABLE_NAME
+                component_readNBytes(this, 1);	        // VARIABLE_TYPE
                 break;
             case BYTECODE_LOAD:
                 GC_decRef(component_readString(this));	// VARIABLE_NAME
@@ -1046,28 +1164,28 @@ int component_skipToNext(Component_PNTR this, int bytecode) {
                 GC_decRef(component_readString(this));	// VARIABLE_NAME
                 break;
             case BYTECODE_COMPONENT:
-                GC_decRef(component_readString(this));									// COMPONENT_NAME
+                GC_decRef(component_readString(this));			// COMPONENT_NAME
                 parameters = fgetc(this->sourceFile);			// NO_OF_INTERFACE
                 for( int i = 0; i < parameters; i++ ) {
-                    int channels = fgetc(this->sourceFile);	// NO_OF_CHANNEL
+                    int channels = fgetc(this->sourceFile);	    // NO_OF_CHANNEL
                     for( int j = 0; j < channels; j++ ) {
                         fgetc(this->sourceFile);				// DIRECTION
                         fgetc(this->sourceFile);				// TYPE
-                        GC_decRef(component_readString(this));							// CHANNEL_NAME
+                        GC_decRef(component_readString(this));	// CHANNEL_NAME
                     }
                 }
                 break;
             case BYTECODE_CALL:
-                GC_decRef(component_readString(this));								// COMPONENT_NAME
+                GC_decRef(component_readString(this));		// COMPONENT_NAME
                 parameters = fgetc(this->sourceFile);		// NUMBER_OF_PARAMETERS
                 for( int i = 0; i < parameters; i++ )
-                    GC_decRef(component_readString(this));							// PARAMETER
+                    GC_decRef(component_readString(this));  // PARAMETER
                 break;
             case BYTECODE_CONSTRUCTOR:
                 parameters = fgetc(this->sourceFile);			// NUMBER_OF_PARAMETERS
                 for( int i = 0; i < parameters; i++ ) {
                     fgetc(this->sourceFile);					// TYPE_OF_PARAMETER
-                    GC_decRef(component_readString(this));								// NAME_OF_PARAMETER
+                    GC_decRef(component_readString(this));		// NAME_OF_PARAMETER
                 }
                 break;
             case BYTECODE_JUMP:
@@ -1095,12 +1213,23 @@ int component_skipToNext(Component_PNTR this, int bytecode) {
             case BYTECODE_RECEIVE:
                 GC_decRef(component_readString(this));	// CHANNEL_NAME
                 break;
+            case BYTECODE_PROC:
+                GC_decRef(component_readString(this));          // PROC_NAME
+                parameters = fgetc(this->sourceFile);			// NUMBER_OF_PARAMETERS
+                for( int i = 0; i < parameters; i++ ) {
+                    fgetc(this->sourceFile);					// TYPE_OF_PARAMETER
+                    GC_decRef(component_readString(this));		// NAME_OF_PARAMETER
+                }
+                break;
+            case BYTECODE_PROCCALL:
+                GC_decRef(component_readString(this));  // PROC_NAME
 			default:
 //				ENTERSCOPE, EXITESCOPE,
 //				ADD, SUB, MUL, DIV, MOD,
 //				LESS, LESSEQUAL, MORE, MOREEQUAL, EQUAL, UNEQUAL,
 //				AND, OR, NOT,
-//				BITAND, BITOR, BITXOR, BITNOT
+//				BITAND, BITOR, BITXOR, BITNOT,
+//              RETURN
 				break;
         }
         next = fgetc(this->sourceFile);
