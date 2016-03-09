@@ -8,14 +8,16 @@
  */
 
 #include "StandardFunctions.h"
-#include "events.h"
-#include "sched_arch.h"
+#include "../Logger/Logger.h"
 #include <stdio.h>
 
 
 // Global printInt function (can be accessed directly from Insense as proc)
 
-void printInt_proc(void *this, void *handler, int param ){
-    
-	printf("%d", param);
+void printInt_proc(void *this, int argc, void* argv[]){
+    if(argc != 1) {
+        log_logMessage(ERROR, "printInt_proc", "Unexpected argument count - expected 1, got %d", argc);
+        return;
+    }
+    printf("%d", *(int*)argv[0]);
 }

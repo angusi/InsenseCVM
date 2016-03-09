@@ -45,6 +45,8 @@ int main(int argc, char* argv[]) {
     printf("%s %s\n", PROGRAM_NAME, PROGRAM_VERSION);
     log_init();
     GC_init();
+    StandardFunction_init();
+    
 
     if(argc < 2 || argc == 3 || argc > 4) {
         printf(PROGRAM_USAGE, argv[0]);

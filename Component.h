@@ -32,6 +32,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "GC/GC_mem.h"
+#include "InsenseRuntimeCVM/StandardFunctions.h"
 #include "Logger/Logger.h"
 #include "Collections/Stack.h"
 #include "ScopeStack/ScopeStack.h"
