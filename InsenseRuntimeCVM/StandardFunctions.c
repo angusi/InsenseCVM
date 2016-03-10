@@ -50,11 +50,22 @@ void StandardFunction_init() {
         strcat(name, "printInt");
         Procedure_PNTR printInt_proc = Procedure_construct(name);
         paramName = GC_alloc(strlen("i")+1, false);
-        strcat(paramName, "s");
+        strcat(paramName, "i");
         Procedure_addParameter(printInt_proc, paramName);
         Procedure_setPosition(printInt_proc, (long)&StandardFunction_printInt);
         ListMap_declare(standardFunctions, name);
         ListMap_put(standardFunctions, name, printInt_proc);
+
+        //printReal(real r)
+        name = GC_alloc(strlen("printReal"+1), false);
+        strcat(name, "printReal");
+        Procedure_PNTR printReal_proc = Procedure_construct(name);
+        paramName = GC_alloc(strlen("r")+1, false);
+        strcat(paramName, "r");
+        Procedure_addParameter(printReal_proc, paramName);
+        Procedure_setPosition(printReal_proc, (long)&StandardFunction_printReal);
+        ListMap_declare(standardFunctions, name);
+        ListMap_put(standardFunctions, name, printReal_proc);
 
 
         printf("Standard Functions initialised at %p\n", (void*)standardFunctions);

@@ -7,18 +7,21 @@
  *
  */
 
+#include <math.h>
 #include "StandardFunctions.h"
-#include "events.h"
-#include <stdio.h>
-#include "math.h"
+#include "../Logger/Logger.h"
 
 
 // Global Print Any function (can be accessed directly from Insense as proc)
 
-void printReal_proc(void *this, void *handler, float f ){
-	int i = (int) f;
-	if( i==0 && f < 0){
+void* StandardFunction_printReal(int argc, void* argv[]){
+	if(argc != 1) {
+		log_logMessage(ERROR, "printReal_proc", "Unexpected argument count - expected 1, got %d", argc);
+		return 0;
+	}
+	int i = (int) argv[0];
+	if( i==0 && argv[0] < 0){
 		printf("-");
 	}
-	printf("%i.%02i", i, (int) (fabs(f - i) * 100) );
+	printf("%i.%02i", i, (int) (fabs(*(double*)argv[0] - i) * 100) );
 }

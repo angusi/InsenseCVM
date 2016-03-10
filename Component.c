@@ -62,8 +62,9 @@ void component_send(Component_PNTR this);
 void component_receive(Component_PNTR this);
 void component_proc(Component_PNTR this);
 void component_procCall(Component_PNTR this);
-void component_standardFunctionCall(Component_PNTR this, char* procName);
 void component_procReturn(Component_PNTR this);
+void component_struct(Component_PNTR this);
+void component_struct_constructor(Component_PNTR this);
 
 /**
  * Construct a new component object
@@ -194,6 +195,9 @@ void* component_run(void* component) {
                 break;
             case BYTECODE_RETURN:
                 component_procReturn(this);
+                break;
+            case BYTECODE_STRUCT:
+                component_struct(this);
                 break;
             default:
                 log_logMessage(ERROR, this->name, "Unknown Byte Read - %u", nextByte);
@@ -485,7 +489,6 @@ void component_push(Component_PNTR this) {
     }
     Stack_push(this->dataStack, data);
 }
-
 
 void component_load(Component_PNTR this) {
 #ifdef DEBUGGINGENABLED
@@ -1096,6 +1099,44 @@ void component_procReturn(Component_PNTR this) {
     log_logMessage(DEBUG, this->name, "    Seeking to byte %ld", *newPos);
 #endif
     fseek(this->sourceFile, *newPos, SEEK_SET);
+}
+
+void component_struct(Component_PNTR this) {
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, this->name, "STRUCT");
+#endif
+
+    int nextByte = fgetc(this->sourceFile);
+    switch(nextByte) {
+        case BYTECODE_STRUCT_CONSTRUCTOR:
+            component_struct_constructor(this);
+            break;
+        default:
+            log_logMessage(FATAL, this->name, "Unknown Byte Read - %u", nextByte);
+            component_cleanUpAndStop(this, NULL);
+            break;
+    }
+}
+
+void component_struct_constructor(Component_PNTR this) {
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, this->name, "    STRUCT CONSTRUCTOR");
+#endif
+
+    TypedObject_PNTR newStruct = TypedObject_construct(BYTECODE_TYPE_STRUCT, ListMap_constructor());
+
+    int paramsToRead = fgetc(this->sourceFile);
+    if(paramsToRead > 0) {
+        ListMap_PNTR paramsList = TypedObject_getObject(newStruct);
+        for(int i = 0; i < paramsToRead; i++) {
+            fgetc(this->sourceFile); //TODO: Ignoring type just now...
+            char* name = component_readString(this);
+#ifdef DEBUGGINGENABLED
+            log_logMessage(DEBUG, this->name, "        Declaring struct field %s", name);
+#endif
+            ListMap_declare(paramsList, name);
+        }
+    }
 }
 
 //------

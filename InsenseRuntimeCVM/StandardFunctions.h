@@ -28,7 +28,7 @@
 //int realToInt_proc(void *this, void *op_status, float r);
 void* StandardFunction_printString(int argc, void* argv[]);
 void* StandardFunction_printInt(int argc, void* argv[]);
-//void printReal_proc(void *this, void *op_status, float f);
+void* StandardFunction_printReal(int argc, void* argv[]);
 //void printUnsignedInt_proc(void *this, void *op_status, unsigned u);
 //void printByte_proc(void *this, void *op_status, uint8_t b);
 //void printTCString_proc(void *this, void *handler, StringPNTR param );

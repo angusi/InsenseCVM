@@ -13,5 +13,6 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -lpthread -Wall -Wextra -Wpedantic 
 #        StandardFunctionsPrintTCString.c StandardFunctionsPrintTCUnsignedInt.c StandardFunctionsPrintUnsignedInt.c
 #        StandardFunctionsRealToInt.c StandardFunctionsSquareInt.c StandardFunctionsSquareReal.c
 #        StandardFunctionsSquareRoot.c StandardFunctionsStringEquals.c)
-set(SOURCE_FILES StandardFunctions.h StandardFunctionsPrintInt.c StandardFunctionsPrintString.c StandardFunctions.c)
+set(SOURCE_FILES StandardFunctions.h StandardFunctionsPrintInt.c StandardFunctionsPrintString.c
+        StandardFunctionsPrintReal.c StandardFunctions.c)
 add_library(InsenseRuntimeCVM ${SOURCE_FILES})

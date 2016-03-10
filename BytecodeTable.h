@@ -42,6 +42,7 @@
 #define BYTECODE_TYPE_INTERFACE         9
 #define BYTECODE_TYPE_IN                10
 #define BYTECODE_TYPE_OUT               11
+#define BYTECODE_TYPE_STRUCT            12
 
 
 // Bytecodes
@@ -87,5 +88,9 @@
 #define BYTECODE_RETURN          37 //RETURN
 #define BYTECODE_PROCCALL        38 //PROC_CALL [PROC_NAME]
 #define BYTECODE_BLOCKEND        39
+#define BYTECODE_STRUCT          40 // STRUCT [STRUCT_OP ...]
+
+#define BYTECODE_STRUCT_CONSTRUCTOR   1	          // STRUCT_CONSTRUCTOR [STRUCT_NAME] [NUMBER_OF_PARAMETERS] {[TYPE] {PARAMETER_NAME] ...}
+#define BYTECODE_STRUCT_LOAD          2           // STRUCT_LOAD [FIELD_NAME]
 
 #endif //CVM_BYTECODETABLE_H
