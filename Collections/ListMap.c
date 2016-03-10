@@ -69,7 +69,7 @@ bool ListMap_put(ListMap_PNTR listMap, char *key, void *value) {
 
     if(varElement == NULL) {
 #ifdef DEBUGGINGENABLED
-        log_logMessage(DEBUG, "ListMap", "Tried to put data in unknown key %s", key);
+        log_logMessage(INFO, "ListMap", "Tried to put data in unknown key %s (this may not be an error)", key);
 #endif
         return false;
     }

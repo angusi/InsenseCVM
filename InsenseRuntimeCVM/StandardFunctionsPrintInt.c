@@ -14,10 +14,11 @@
 
 // Global printInt function (can be accessed directly from Insense as proc)
 
-void printInt_proc(void *this, int argc, void* argv[]){
+void* StandardFunction_printInt(int argc, void* argv[]){
     if(argc != 1) {
         log_logMessage(ERROR, "printInt_proc", "Unexpected argument count - expected 1, got %d", argc);
-        return;
+        return 0;
     }
     printf("%d", *(int*)argv[0]);
+    return 0;
 }

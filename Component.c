@@ -999,7 +999,7 @@ void component_proc(Component_PNTR this) {
     Procedure_PNTR newProcedure = Procedure_construct(procName);
 
     int parameters = fgetc(this->sourceFile);			// NUMBER_OF_PARAMETERS
-    log_logMessage(WARNING, this->name, "    %d params", parameters);
+    log_logMessage(INFO, this->name, "    %d params", parameters);
     for( int i = 0; i < parameters; i++ ) {
         //TODO: Currently we just ignore the param types
 #ifdef DEBUGGINGENABLED
@@ -1032,21 +1032,11 @@ void component_procCall(Component_PNTR this) {
 #endif
 
     Procedure_PNTR proc = ListMap_get(this->procs, procName);
-    if(proc == NULL) {
-        proc = ListMap_get(standardFunctions, procName);
-        if(proc == NULL) {
-            log_logMessage(FATAL, this->name, "Procedure not found! Terminating.");
-            component_cleanUpAndStop(this, NULL);
-        }
-    }
-
-    GC_decRef(procName);
-
-    //Enter a new scope level, and put the return address (i.e. the current next byte index) in
-    component_enterScope(this);
-
-    if(Procedure_getPosition(proc) != 0) {
+    if(proc != NULL) {
         //Program-defined proc
+
+        //Enter a new scope level, and put the return address (i.e. the current next byte index) in
+        component_enterScope(this);
 
         long* fPos = GC_alloc(sizeof(long), false);
         *fPos = ftell(this->sourceFile);
@@ -1065,19 +1055,28 @@ void component_procCall(Component_PNTR this) {
         log_logMessage(DEBUG, this->name, "     Seeking to byte %ld", Procedure_getPosition(proc));
 #endif
         fseek(this->sourceFile, Procedure_getPosition(proc), SEEK_SET);
-    } else { //Procedure_getPosition(proc) == 0
+    } else {
+        proc = ListMap_get(standardFunctions, procName);
+        if(proc == NULL) {
+            log_logMessage(FATAL, this->name, "Procedure %s not found in Component %s or standard functions in %p!"
+                    " Terminating.", procName, this->name, standardFunctions);
+            component_cleanUpAndStop(this, NULL);
+        }
+
         //Globally defined decl
 
         IteratedList_PNTR paramNames = Procedure_getParameters(proc);
-        int numParams = IteratedList_getListLength(paramNames);
+        unsigned int numParams = IteratedList_getListLength(paramNames);
         void** params = GC_alloc(sizeof(void*)*numParams, false);
         for(unsigned int i = 0; i < numParams; i++) {
             //TODO: Check GC Ref counts of pop/store/getElement values
-            params[i] = Stack_pop(this->dataStack);
+            params[i] = TypedObject_getObject(Stack_pop(this->dataStack));
         }
 
-        // TODO: ...
+        StandardFunction function = (StandardFunction) Procedure_getPosition(proc);
+        function(numParams, params);
     }
+    GC_decRef(procName);
 }
 
 void component_procReturn(Component_PNTR this) {

@@ -26,8 +26,8 @@
 //float squareRootInt_proc(void *this, void *op_status, int i);
 //float squareRoot_proc(void *this, void *op_status, float r);
 //int realToInt_proc(void *this, void *op_status, float r);
-void printString_proc(void *this, int argc, void* argv[]);
-void printInt_proc(void *this, int argc, void* argv[]);
+void* StandardFunction_printString(int argc, void* argv[]);
+void* StandardFunction_printInt(int argc, void* argv[]);
 //void printReal_proc(void *this, void *op_status, float f);
 //void printUnsignedInt_proc(void *this, void *op_status, unsigned u);
 //void printByte_proc(void *this, void *op_status, uint8_t b);
@@ -41,6 +41,8 @@ void printInt_proc(void *this, int argc, void* argv[]);
 //bool stringEquals_proc(void *this, void *handler, StringPNTR param1, StringPNTR param2);
 //int parseInt_proc(void *this, void *handler, StringPNTR s);
 //float parseReal_proc(void *this, void *handler, StringPNTR s);
+
+typedef void* (*StandardFunction)(int, void*);
 
 ListMap_PNTR standardFunctions;
 void StandardFunction_init();

@@ -14,12 +14,14 @@
 
 // Global Print Any function (can be accessed directly from Insense as proc)
 
-void printString_proc(void *this, int argc, void* argv[]){
-  // Write output
-  if(argc != 1) {
-    log_logMessage(ERROR, "printInt_proc", "Unexpected argument count - expected 1, got %d", argc);
-    return;
-  }
+void* StandardFunction_printString(int argc, void* argv[]){
+    // Write output
+    if(argc != 1) {
+        log_logMessage(ERROR, "printInt_proc", "Unexpected argument count - expected 1, got %d", argc);
+        return 0;
+    }
 
-  printf("%s", (char*)argv[0]);
+    //TODO: Some kind of unescaping so we can have e.g. \n in the string?
+    printf("%s\n", (char*)argv[0]);
+    return 0;
 }

@@ -26,24 +26,37 @@
 #include "StandardFunctions.h"
 #include "../Logger/Logger.h"
 #include "../Procedure.h"
+#include "../GC/GC_mem.h"
 
 void StandardFunction_init() {
     //TODO: This seems like a really inefficient way to do this...
     if(standardFunctions == NULL) {
         standardFunctions = ListMap_constructor();
 
-        Procedure_PNTR printString_proc = Procedure_construct("printString");
-        Procedure_addParameter(printString_proc, "str");
-        Procedure_setPosition(printString_proc, 0);
-        ListMap_put(standardFunctions, "printString", printString_proc);
+        //printString(string s)
+        char* name = GC_alloc(strlen("printString"+1), false);
+        strcat(name, "printString");
+        Procedure_PNTR printString_proc = Procedure_construct(name);
+        char* paramName = GC_alloc(strlen("s")+1, false);
+        strcat(paramName, "s");
+        Procedure_addParameter(printString_proc, paramName);
+        Procedure_setPosition(printString_proc, (long)&StandardFunction_printString);
+        ListMap_declare(standardFunctions, name);
+        ListMap_put(standardFunctions, name, printString_proc);
 
 
-        Procedure_PNTR printInt_proc = Procedure_construct("printInt");
-        Procedure_addParameter(printInt_proc, "i");
-        Procedure_setPosition(printInt_proc, 0);
-        ListMap_put(standardFunctions, "printInt", printInt_proc);
+        //printInt(int i)
+        name = GC_alloc(strlen("printInt"+1), false);
+        strcat(name, "printInt");
+        Procedure_PNTR printInt_proc = Procedure_construct(name);
+        paramName = GC_alloc(strlen("i")+1, false);
+        strcat(paramName, "s");
+        Procedure_addParameter(printInt_proc, paramName);
+        Procedure_setPosition(printInt_proc, (long)&StandardFunction_printInt);
+        ListMap_declare(standardFunctions, name);
+        ListMap_put(standardFunctions, name, printInt_proc);
 
 
-        printf("Standard Functions initialised\n");
+        printf("Standard Functions initialised at %p\n", (void*)standardFunctions);
     }
 }
