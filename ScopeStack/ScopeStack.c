@@ -70,6 +70,10 @@ void* ScopeStack_load(ScopeStack_PNTR this, char *name) {
     IteratedListNode_PNTR first = this->first;
     IteratedListNode_PNTR thisLevel = first;
 
+    if(first == NULL || thisLevel == NULL) {
+        return NULL;
+    }
+
     void* element = ListMap_get(thisLevel->payload, name);
     if(element != NULL) {
         return element;

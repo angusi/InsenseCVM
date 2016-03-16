@@ -60,6 +60,7 @@ struct Component {
     ListMap_PNTR procs;                       //!< List of procedures and their byte positions in this component.
     bool stop;                                //!< If true, Component will terminate on next instruction.
     bool running;                             //!< Certain operations require the component to be fully initialised. True on this flag indicates this status.
+    bool inProject;                           //!< Project blocks need skipping out of at the end, so this marks if a project block is being executed.
 };
 
 /**

@@ -33,7 +33,7 @@ void initialise_sems_and_mutexes(Channel_PNTR this){
 
 Channel_PNTR channel_create(chan_dir direction, int typesize) {
 #ifdef DEBUGGINGENABLED
-    log_logMessage(DEBUG, "Channels", "Creating channel");
+    log_logMessage(DEBUG, "Channels", "Creating channel (%s, size %d)", (direction == CHAN_IN) ? "in" : "out", typesize);
 #endif
     Channel_PNTR this = (Channel_PNTR)GC_alloc(sizeof(struct Channel), true);
     if(this == (void*) 0){

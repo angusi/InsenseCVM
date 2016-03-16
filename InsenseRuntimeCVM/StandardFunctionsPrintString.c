@@ -22,6 +22,6 @@ void* StandardFunction_printString(int argc, void* argv[]){
     }
 
     //TODO: Some kind of unescaping so we can have e.g. \n in the string?
-    printf("%s\n", (char*)argv[0]);
+    printf("%s", (char*)argv[0]);
     return 0;
 }

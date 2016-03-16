@@ -26,6 +26,7 @@
  * THE SOFTWARE.
  */
 
+#include <math.h>
 #include <unistd.h>
 #include "Component.h"
 #include "BytecodeTable.h"
@@ -65,6 +66,11 @@ void component_procCall(Component_PNTR this);
 void component_procReturn(Component_PNTR this);
 void component_struct(Component_PNTR this);
 void component_struct_constructor(Component_PNTR this);
+void component_struct_load(Component_PNTR this);
+void component_blockEnd(Component_PNTR this);
+void component_any(Component_PNTR this);
+void component_projectEntry(Component_PNTR this);
+void component_projectExit(Component_PNTR this);
 
 /**
  * Construct a new component object
@@ -188,7 +194,7 @@ void* component_run(void* component) {
                 component_proc(this);
                 break;
             case BYTECODE_BLOCKEND:
-                //No-op
+                component_blockEnd(this);
                 break;
             case BYTECODE_PROCCALL:
                 component_procCall(this);
@@ -199,6 +205,14 @@ void* component_run(void* component) {
             case BYTECODE_STRUCT:
                 component_struct(this);
                 break;
+            case BYTECODE_ANY:
+                component_any(this);
+                break;
+            case BYTECODE_PROJECT_ENTRY:
+                component_projectEntry(this);
+                break;
+            case BYTECODE_PROJECT_EXIT:
+                component_projectExit(this);
             default:
                 log_logMessage(ERROR, this->name, "Unknown Byte Read - %u", nextByte);
                 break;
@@ -522,6 +536,29 @@ void component_expression(Component_PNTR this, int bytecode_op) {
     TypedObject_PNTR second = Stack_pop(this->dataStack);
     TypedObject_PNTR first = Stack_pop(this->dataStack);
 
+    double castFirst = 0;
+    double castSecond = 0;
+
+    if(TypedObject_getTypeByteCode(first) == BYTECODE_TYPE_REAL) {
+        castFirst = *(double*)TypedObject_getObject(first);
+    } else if(TypedObject_getTypeByteCode(first) == BYTECODE_TYPE_UNSIGNED_INTEGER) {
+        castFirst = (double)*(unsigned int*)TypedObject_getObject(first);
+    } else if(TypedObject_getTypeByteCode(first) == BYTECODE_TYPE_INTEGER) {
+        castFirst = (double)*(int*)TypedObject_getObject(first);
+    } else if(TypedObject_getTypeByteCode(first) == BYTECODE_TYPE_BYTE) {
+        castFirst = (double)*(char*)TypedObject_getObject(first);
+    }
+
+    if(TypedObject_getTypeByteCode(second) == BYTECODE_TYPE_REAL) {
+        castSecond = *(double*)TypedObject_getObject(second);
+    } else if(TypedObject_getTypeByteCode(second) == BYTECODE_TYPE_UNSIGNED_INTEGER) {
+        castSecond = (double)*(unsigned int*)TypedObject_getObject(second);
+    } else if(TypedObject_getTypeByteCode(second) == BYTECODE_TYPE_INTEGER) {
+        castSecond = (double)*(int*)TypedObject_getObject(second);
+    } else if(TypedObject_getTypeByteCode(second) == BYTECODE_TYPE_BYTE) {
+        castSecond = (double)*(char*)TypedObject_getObject(second);
+    }
+
     TypedObject_PNTR result = NULL;
 
     if(bytecode_op == BYTECODE_ADD) {
@@ -534,16 +571,16 @@ void component_expression(Component_PNTR this, int bytecode_op) {
         }
         if(TypedObject_getTypeByteCode(first) == BYTECODE_TYPE_REAL || TypedObject_getTypeByteCode(second) == BYTECODE_TYPE_REAL) {
             result = TypedObject_construct(BYTECODE_TYPE_REAL, GC_alloc(sizeof(double), false));
-            *(double*)TypedObject_getObject(result) = *(double*)TypedObject_getObject(first) + *(double*)TypedObject_getObject(second);
+            *(double*)TypedObject_getObject(result) = castFirst + castSecond;
         } else if(TypedObject_getTypeByteCode(first) == BYTECODE_TYPE_UNSIGNED_INTEGER || TypedObject_getTypeByteCode(second) == BYTECODE_TYPE_UNSIGNED_INTEGER) {
             result = TypedObject_construct(BYTECODE_TYPE_UNSIGNED_INTEGER, GC_alloc(sizeof(unsigned int), false));
-            *(unsigned int*)TypedObject_getObject(result) = *(unsigned int*)TypedObject_getObject(first) + *(unsigned int*)TypedObject_getObject(second);
+            *(unsigned int*)TypedObject_getObject(result) = (unsigned int)(castFirst + castSecond);
         } else if(TypedObject_getTypeByteCode(first) == BYTECODE_TYPE_INTEGER || TypedObject_getTypeByteCode(second) == BYTECODE_TYPE_INTEGER) {
             result = TypedObject_construct(BYTECODE_TYPE_INTEGER, GC_alloc(sizeof(int), false));
-            *(int*)TypedObject_getObject(result) = *(int*)TypedObject_getObject(first) + *(int*)TypedObject_getObject(second);
+            *(int*)TypedObject_getObject(result) = (int)(castFirst + castSecond);
         } else if(TypedObject_getTypeByteCode(first) == BYTECODE_TYPE_BYTE || TypedObject_getTypeByteCode(second) == BYTECODE_TYPE_BYTE) {
             result = TypedObject_construct(BYTECODE_TYPE_BYTE, GC_alloc(sizeof(char), false));
-            *(char*)TypedObject_getObject(result) = *(char*)TypedObject_getObject(first) + *(char*)TypedObject_getObject(second);
+            *(char*)TypedObject_getObject(result) = (char)(castFirst + castSecond);
         }
     } else if(bytecode_op == BYTECODE_SUB) {
 #ifdef DEBUGGINGENABLED
@@ -555,16 +592,16 @@ void component_expression(Component_PNTR this, int bytecode_op) {
         }
         if(TypedObject_getTypeByteCode(first) == BYTECODE_TYPE_REAL || TypedObject_getTypeByteCode(second) == BYTECODE_TYPE_REAL) {
             result = TypedObject_construct(BYTECODE_TYPE_REAL, GC_alloc(sizeof(double), false));
-            *(double*)TypedObject_getObject(result) = *(double*)TypedObject_getObject(first) - *(double*)TypedObject_getObject(second);
+            *(double*)TypedObject_getObject(result) = castFirst - castSecond;
         } else if(TypedObject_getTypeByteCode(first) == BYTECODE_TYPE_UNSIGNED_INTEGER || TypedObject_getTypeByteCode(second) == BYTECODE_TYPE_UNSIGNED_INTEGER) {
             result = TypedObject_construct(BYTECODE_TYPE_UNSIGNED_INTEGER, GC_alloc(sizeof(unsigned int), false));
-            *(unsigned int*)TypedObject_getObject(result) = *(unsigned int*)TypedObject_getObject(first) - *(unsigned int*)TypedObject_getObject(second);
+            *(unsigned int*)TypedObject_getObject(result) = (unsigned int)(castFirst - castSecond);
         } else if(TypedObject_getTypeByteCode(first) == BYTECODE_TYPE_INTEGER || TypedObject_getTypeByteCode(second) == BYTECODE_TYPE_INTEGER) {
             result = TypedObject_construct(BYTECODE_TYPE_INTEGER, GC_alloc(sizeof(int), false));
-            *(int*)TypedObject_getObject(result) = *(int*)TypedObject_getObject(first) - *(int*)TypedObject_getObject(second);
+            *(int*)TypedObject_getObject(result) = (int)(castFirst - castSecond);
         } else if(TypedObject_getTypeByteCode(first) == BYTECODE_TYPE_BYTE || TypedObject_getTypeByteCode(second) == BYTECODE_TYPE_BYTE) {
             result = TypedObject_construct(BYTECODE_TYPE_BYTE, GC_alloc(sizeof(char), false));
-            *(char*)TypedObject_getObject(result) = *(char*)TypedObject_getObject(first) - *(char*)TypedObject_getObject(second);
+            *(char*)TypedObject_getObject(result) = (char)(castFirst - castSecond);
         }
     } else if(bytecode_op == BYTECODE_MUL) {
 #ifdef DEBUGGINGENABLED
@@ -576,16 +613,16 @@ void component_expression(Component_PNTR this, int bytecode_op) {
         }
         if(TypedObject_getTypeByteCode(first) == BYTECODE_TYPE_REAL || TypedObject_getTypeByteCode(second) == BYTECODE_TYPE_REAL) {
             result = TypedObject_construct(BYTECODE_TYPE_REAL, GC_alloc(sizeof(double), false));
-            *(double*)TypedObject_getObject(result) = *(double*)TypedObject_getObject(first) * *(double*)TypedObject_getObject(second);
+            *(double*)TypedObject_getObject(result) = castFirst * castSecond;
         } else if(TypedObject_getTypeByteCode(first) == BYTECODE_TYPE_UNSIGNED_INTEGER || TypedObject_getTypeByteCode(second) == BYTECODE_TYPE_UNSIGNED_INTEGER) {
             result = TypedObject_construct(BYTECODE_TYPE_UNSIGNED_INTEGER, GC_alloc(sizeof(unsigned int), false));
-            *(unsigned int*)TypedObject_getObject(result) = *(unsigned int*)TypedObject_getObject(first) * *(unsigned int*)TypedObject_getObject(second);
+            *(unsigned int*)TypedObject_getObject(result) = (unsigned int)(castFirst * castSecond);
         } else if(TypedObject_getTypeByteCode(first) == BYTECODE_TYPE_INTEGER || TypedObject_getTypeByteCode(second) == BYTECODE_TYPE_INTEGER) {
             result = TypedObject_construct(BYTECODE_TYPE_INTEGER, GC_alloc(sizeof(int), false));
-            *(int*)TypedObject_getObject(result) = *(int*)TypedObject_getObject(first) * *(int*)TypedObject_getObject(second);
+            *(int*)TypedObject_getObject(result) = (int)(castFirst * castSecond);
         } else if(TypedObject_getTypeByteCode(first) == BYTECODE_TYPE_BYTE || TypedObject_getTypeByteCode(second) == BYTECODE_TYPE_BYTE) {
             result = TypedObject_construct(BYTECODE_TYPE_BYTE, GC_alloc(sizeof(char), false));
-            *(char*)TypedObject_getObject(result) = *(char*)TypedObject_getObject(first) * *(char*)TypedObject_getObject(second);
+            *(char*)TypedObject_getObject(result) = (char)(castFirst * castSecond);
         }
     } else if(bytecode_op == BYTECODE_DIV) {
 #ifdef DEBUGGINGENABLED
@@ -597,16 +634,16 @@ void component_expression(Component_PNTR this, int bytecode_op) {
         }
         if(TypedObject_getTypeByteCode(first) == BYTECODE_TYPE_REAL || TypedObject_getTypeByteCode(second) == BYTECODE_TYPE_REAL) {
             result = TypedObject_construct(BYTECODE_TYPE_REAL, GC_alloc(sizeof(double), false));
-            *(double*)TypedObject_getObject(result) = *(double*)TypedObject_getObject(first) / *(double*)TypedObject_getObject(second);
+            *(double*)TypedObject_getObject(result) = castFirst / castSecond;
         } else if(TypedObject_getTypeByteCode(first) == BYTECODE_TYPE_UNSIGNED_INTEGER || TypedObject_getTypeByteCode(second) == BYTECODE_TYPE_UNSIGNED_INTEGER) {
             result = TypedObject_construct(BYTECODE_TYPE_UNSIGNED_INTEGER, GC_alloc(sizeof(unsigned int), false));
-            *(unsigned int*)TypedObject_getObject(result) = *(unsigned int*)TypedObject_getObject(first) / *(unsigned int*)TypedObject_getObject(second);
+            *(unsigned int*)TypedObject_getObject(result) = (unsigned int)(castFirst / castSecond);
         } else if(TypedObject_getTypeByteCode(first) == BYTECODE_TYPE_INTEGER || TypedObject_getTypeByteCode(second) == BYTECODE_TYPE_INTEGER) {
             result = TypedObject_construct(BYTECODE_TYPE_INTEGER, GC_alloc(sizeof(int), false));
-            *(int*)TypedObject_getObject(result) = *(int*)TypedObject_getObject(first) / *(int*)TypedObject_getObject(second);
+            *(int*)TypedObject_getObject(result) = (int)(castFirst / castSecond);
         } else if(TypedObject_getTypeByteCode(first) == BYTECODE_TYPE_BYTE || TypedObject_getTypeByteCode(second) == BYTECODE_TYPE_BYTE) {
             result = TypedObject_construct(BYTECODE_TYPE_BYTE, GC_alloc(sizeof(char), false));
-            *(char*)TypedObject_getObject(result) = *(char*)TypedObject_getObject(first) / *(char*)TypedObject_getObject(second);
+            *(char*)TypedObject_getObject(result) = (char)(castFirst / castSecond);
         }
     } else if(bytecode_op == BYTECODE_MOD) {
 #ifdef DEBUGGINGENABLED
@@ -622,13 +659,13 @@ void component_expression(Component_PNTR this, int bytecode_op) {
             component_cleanUpAndStop(this, NULL);
         } else if(TypedObject_getTypeByteCode(first) == BYTECODE_TYPE_UNSIGNED_INTEGER || TypedObject_getTypeByteCode(second) == BYTECODE_TYPE_UNSIGNED_INTEGER) {
             result = TypedObject_construct(BYTECODE_TYPE_UNSIGNED_INTEGER, GC_alloc(sizeof(unsigned int), false));
-            *(unsigned int*)TypedObject_getObject(result) = *(unsigned int*)TypedObject_getObject(first) % *(unsigned int*)TypedObject_getObject(second);
+            *(unsigned int*)TypedObject_getObject(result) = (unsigned int)((int)castFirst % (int)castSecond);
         } else if(TypedObject_getTypeByteCode(first) == BYTECODE_TYPE_INTEGER || TypedObject_getTypeByteCode(second) == BYTECODE_TYPE_INTEGER) {
             result = TypedObject_construct(BYTECODE_TYPE_INTEGER, GC_alloc(sizeof(int), false));
-            *(int*)TypedObject_getObject(result) = *(int*)TypedObject_getObject(first) % *(int*)TypedObject_getObject(second);
+            *(int*)TypedObject_getObject(result) = (int)((int)castFirst % (int)castSecond);
         } else if(TypedObject_getTypeByteCode(first) == BYTECODE_TYPE_BYTE || TypedObject_getTypeByteCode(second) == BYTECODE_TYPE_BYTE) {
             result = TypedObject_construct(BYTECODE_TYPE_BYTE, GC_alloc(sizeof(char), false));
-            *(char*)TypedObject_getObject(result) = *(char*)TypedObject_getObject(first) % *(char*)TypedObject_getObject(second);
+            *(char*)TypedObject_getObject(result) = (char)((int)castFirst % (int)castSecond);
         }
     } else if(bytecode_op == BYTECODE_AND) {
 #ifdef DEBUGGINGENABLED
@@ -660,29 +697,6 @@ void component_expression(Component_PNTR this, int bytecode_op) {
         if(!TypedObject_isNumber(first) || !TypedObject_isNumber(second)) {
             log_logMessage(FATAL, this->name, "Syntax error in EXPR %u - Operand Type Mismatched", bytecode_op);
             component_cleanUpAndStop(this, NULL);
-        }
-
-        double castFirst = 0;
-        double castSecond = 0;
-
-        if(TypedObject_getTypeByteCode(first) == BYTECODE_TYPE_REAL) {
-            castFirst = *(double*)TypedObject_getObject(first);
-        } else if(TypedObject_getTypeByteCode(first) == BYTECODE_TYPE_UNSIGNED_INTEGER) {
-            castFirst = (double)*(unsigned int*)TypedObject_getObject(first);
-        } else if(TypedObject_getTypeByteCode(first) == BYTECODE_TYPE_INTEGER) {
-            castFirst = (double)*(int*)TypedObject_getObject(first);
-        } else if(TypedObject_getTypeByteCode(first) == BYTECODE_TYPE_BYTE) {
-            castFirst = (double)*(char*)TypedObject_getObject(first);
-        }
-
-        if(TypedObject_getTypeByteCode(second) == BYTECODE_TYPE_REAL) {
-            castSecond = *(double*)TypedObject_getObject(second);
-        } else if(TypedObject_getTypeByteCode(second) == BYTECODE_TYPE_UNSIGNED_INTEGER) {
-            castSecond = (double)*(unsigned int*)TypedObject_getObject(second);
-        } else if(TypedObject_getTypeByteCode(second) == BYTECODE_TYPE_INTEGER) {
-            castSecond = (double)*(int*)TypedObject_getObject(second);
-        } else if(TypedObject_getTypeByteCode(second) == BYTECODE_TYPE_BYTE) {
-            castSecond = (double)*(char*)TypedObject_getObject(second);
         }
 
         result = TypedObject_construct(BYTECODE_TYPE_BOOL, GC_alloc(sizeof(bool), false));
@@ -965,7 +979,7 @@ void component_send(Component_PNTR this) {
     log_logMessage(DEBUG, this->name, "    Sent object of type %d (loc: %p) on %s", TypedObject_getTypeByteCode(poppedData), TypedObject_getObject(poppedData), name1);
 #endif
 
-    GC_decRef(poppedData);
+    //GC_decRef(poppedData);
     GC_decRef(name1);
 }
 
@@ -1034,7 +1048,10 @@ void component_procCall(Component_PNTR this) {
     log_logMessage(DEBUG, this->name, "     %s", procName);
 #endif
 
-    Procedure_PNTR proc = ListMap_get(this->procs, procName);
+    Procedure_PNTR proc = NULL;
+    if(this->procs != NULL) {
+        proc = ListMap_get(this->procs, procName);
+    }
     if(proc != NULL) {
         //Program-defined proc
 
@@ -1111,6 +1128,9 @@ void component_struct(Component_PNTR this) {
         case BYTECODE_STRUCT_CONSTRUCTOR:
             component_struct_constructor(this);
             break;
+        case BYTECODE_STRUCT_LOAD:
+            component_struct_load(this);
+            break;
         default:
             log_logMessage(FATAL, this->name, "Unknown Byte Read - %u", nextByte);
             component_cleanUpAndStop(this, NULL);
@@ -1135,7 +1155,115 @@ void component_struct_constructor(Component_PNTR this) {
             log_logMessage(DEBUG, this->name, "        Declaring struct field %s", name);
 #endif
             ListMap_declare(paramsList, name);
+            TypedObject_PNTR object = Stack_pop(this->dataStack);
+            log_logMessage(DEBUG, this->name, "        Storing value of type %d in field", TypedObject_getTypeByteCode(object));
+            ListMap_put(paramsList, name, object);
         }
+    }
+
+    Stack_push(this->dataStack, newStruct);
+}
+
+void component_struct_load(Component_PNTR this) {
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, this->name, "    STRUCT LOAD");
+#endif
+
+    char* fieldName = component_readString(this);
+
+    ListMap_PNTR structFields = TypedObject_getObject(Stack_pop(this->dataStack));
+    TypedObject_PNTR field = ListMap_get(structFields, fieldName);
+
+    if(field == NULL) {
+        log_logMessage(FATAL, this->name, "Field %s does not exist in struct!", fieldName);
+        component_cleanUpAndStop(this, NULL);
+        return;
+    }
+
+    Stack_push(this->dataStack, field);
+}
+
+void component_blockEnd(Component_PNTR this) {
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, this->name, "BLOCK END");
+#endif
+
+    if(this->inProject) {
+        //Skip to end of project.
+        // We consume one byte - if it's the project end, then nothing left to do.
+        // If it's not, then we've consumed the type of the next project block, and can
+        // just say skip to next exit.
+        int nextByte = fgetc(this->sourceFile);
+        if(nextByte != BYTECODE_PROJECT_EXIT) {
+            component_skipToNext(this, BYTECODE_PROJECT_EXIT);
+        }
+        return;
+    } else {
+        long *returnAddress = ScopeStack_load(this->scopeStack, "_returnAddress");
+        if (returnAddress != NULL) {
+            //In a called procedure, so implicitly return
+            component_procReturn(this);
+        } else {
+            //Nowhere to return to. Probably a constructor...
+            //No-op
+        }
+    }
+}
+
+void component_any(Component_PNTR this) {
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, this->name, "ANY CONSTRUCTOR");
+#endif
+
+    TypedObject_PNTR typedObject = Stack_pop(this->dataStack);
+    TypedObject_PNTR anyObject = TypedObject_construct(BYTECODE_TYPE_ANY, typedObject);
+    Stack_push(this->dataStack, anyObject);
+}
+
+void component_projectEntry(Component_PNTR this) {
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, this->name, "PROJECT ENTRY");
+#endif
+
+    component_enterScope(this);
+    TypedObject_PNTR anyObject = Stack_pop(this->dataStack);
+    TypedObject_PNTR projectedObject = TypedObject_getObject(anyObject);
+    char* asName = component_readString(this);
+    ScopeStack_declare(this->scopeStack, asName);
+    ScopeStack_store(this->scopeStack, asName, projectedObject);
+
+    int nextByte;
+    while((nextByte = fgetc(this->sourceFile)) != BYTECODE_PROJECT_EXIT) {
+        if(nextByte != TypedObject_getTypeByteCode(projectedObject)) {
+            if(nextByte != BYTECODE_TYPE_ANY) {
+                //Not the right project, and not the default project.
+                // Skip to next project.
+                component_skipToNext(this, BYTECODE_BLOCKEND);
+                continue;
+            }
+        }
+        //Found the right project. Mark that we're in a project, then let the component continue.
+        this->inProject = true;
+        return;
+    }
+
+    //Run out of projects to try.
+    log_logMessage(ERROR, this->name, "No matching project block. Attempting to continue.");
+
+}
+
+void component_projectExit(Component_PNTR this) {
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, this->name, "PROJECT EXIT");
+#endif
+
+    if(this->inProject == false) {
+        log_logMessage(FATAL, this->name, "Read Project Exit while not at end of Project!");
+        component_cleanUpAndStop(this, NULL);
+        return;
+    } else {
+        component_exitScope(this);
+        this->inProject = false;
     }
 }
 
@@ -1152,18 +1280,48 @@ char* component_readString(Component_PNTR this) {
     }
 
     //Get length
+    long startPos = ftell(this->sourceFile);
     int numChars = 0;
-    while(fgetc(this->sourceFile) != '\0') {
+    bool escapeChar = false;
+    while((nextByte = fgetc(this->sourceFile)) != '\0') {
+        //Only allowed escaped char (just now) is \n (and \\).
+        //Read this char, and if its a \, read the next char to decide what to do.
+        //If the next char is not an n, count the \ as a separate character.
+        if(nextByte == '\\' && escapeChar == false) {
+            escapeChar = true;
+            continue;
+        }
+
+        if(nextByte != 'n' && nextByte != '\\' && escapeChar == true) {
+            numChars += 2;
+            escapeChar = false;
+        }
         numChars++;
     }
     //Rewind(+1 for \0)
-    fseek(this->sourceFile, (numChars*-1)-1, SEEK_CUR);
+    fseek(this->sourceFile, startPos, SEEK_SET);
 
     char* string = GC_alloc((size_t) (numChars+1), false);
 
     numChars = 0;
+    escapeChar = false;
     while((nextByte = fgetc(this->sourceFile)) != '\0') {
-        string[numChars] = (char) nextByte;
+        if(nextByte == '\\' && escapeChar == false) {
+            escapeChar = true;
+            continue;
+        }
+
+        if(escapeChar == true) {
+            if(nextByte == 'n' ) {
+                string[numChars] = '\n';
+            } else if (nextByte == '\\') {
+                string[numChars] = '\\';
+            }
+            escapeChar = false;
+        } else {
+            string[numChars] = (char) nextByte;
+        }
+
         numChars++;
     }
     string[numChars] = '\0';
@@ -1283,6 +1441,36 @@ int component_skipToNext(Component_PNTR this, int bytecode) {
                 break;
             case BYTECODE_PROCCALL:
                 GC_decRef(component_readString(this));  // PROC_NAME
+                break;
+            case BYTECODE_STRUCT:
+                switch(fgetc(this->sourceFile)) {
+                    case BYTECODE_STRUCT_CONSTRUCTOR:
+                        GC_decRef(component_readString(this));          //STRUCT_NAME
+                        parameters = fgetc(this->sourceFile);           //NUMBER_OF_PARAMETERS
+                        for( int i = 0; i < parameters; i++ ) {
+                            fgetc(this->sourceFile);					// TYPE_OF_PARAMETER
+                            GC_decRef(component_readString(this));		// NAME_OF_PARAMETER
+                        }
+                        break;
+                    case BYTECODE_STRUCT_LOAD:
+                        GC_decRef(component_readString(this));          //FIELD_NAME
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            case BYTECODE_BLOCKEND:
+                if(this->inProject == true && bytecode == BYTECODE_PROJECT_EXIT) {
+                    int nextChar = fgetc(this->sourceFile);
+                    if(nextChar == BYTECODE_PROJECT_EXIT) {
+                        //Found char, rewind to let main logic handle.
+                        fseek(this->sourceFile, -1, SEEK_CUR);
+                    } else {
+                        //Not found char. Must be another project block.
+                        // Consumed its type already, so let loop continue.
+                    }
+                }
+                break;
 			default:
 //				ENTERSCOPE, EXITESCOPE,
 //				ADD, SUB, MUL, DIV, MOD,

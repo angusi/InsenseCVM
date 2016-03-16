@@ -25,6 +25,7 @@
 
 #include "TypedObject.h"
 #include "BytecodeTable.h"
+#include "Collections/ListMap.h"
 
 static void TypedObject_decRef(TypedObject_PNTR pntr);
 
@@ -81,6 +82,11 @@ size_t TypedObject_getSize(unsigned int type) {
             return sizeof(bool);
         case BYTECODE_TYPE_BYTE:
             return sizeof(char);
+        case BYTECODE_TYPE_STRUCT:
+            return sizeof(ListMap_s);
+        case BYTECODE_TYPE_ANY:
+            //Structs are the largest thing we can send, so anytype must handle that.
+            return sizeof(ListMap_s);
         case BYTECODE_TYPE_STRING:
         case BYTECODE_TYPE_ARRAY:
         default:
