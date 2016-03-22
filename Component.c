@@ -233,7 +233,7 @@ void component_cleanUpAndStop(Component_PNTR this, void* __retval) {
         while(Stack_size(this->waitComponents) != 0) {
             Component_PNTR waitOn = TypedObject_getObject((TypedObject_PNTR)Stack_pop(this->waitComponents));
             log_logMessage(INFO, this->name, "  Waiting on %s (%lu)", waitOn->name, waitOn->threadId);
-            pthread_join(waitOn->threadId, NULL);
+            Component_waitForExit(waitOn);
             GC_decRef(waitOn);
         }
         log_logMessage(INFO, this->name, "All started components stopped.");
@@ -247,7 +247,7 @@ void component_cleanUpAndStop(Component_PNTR this, void* __retval) {
     GC_decRef(this);
     log_logMessage(INFO, name, "DONE. Component cleaned up.");
     free(name);
-    pthread_exit(__retval);
+    Component_exit(__retval);
 }
 
 void component_enterScope(Component_PNTR this) {
@@ -343,8 +343,6 @@ Component_PNTR component_call(Component_PNTR this) {
         }
     }
 
-    pthread_t newThread;
-
     size_t sourceFileNameLength = 8 + strlen(name) + 4 + 1; //"Insense_" + name + ".isc" + '\0'
     char* sourceFile = GC_alloc(sourceFileNameLength, false);
     strcat(sourceFile, "Insense_");
@@ -353,8 +351,7 @@ Component_PNTR component_call(Component_PNTR this) {
     sourceFile[sourceFileNameLength-1] = '\0';
     char* filePath = getFilePath(sourceFile);
     Component_PNTR newComponent = component_newComponent(filePath, paramsList);
-    pthread_create(&newThread, NULL, component_run, newComponent);
-    newComponent->threadId = newThread;
+    Component_create(newComponent);
 
     log_logMessage(INFO, this->name, "    Component %s is at address %p", name, newComponent);
 
@@ -1284,6 +1281,7 @@ char* component_readString(Component_PNTR this) {
     int numChars = 0;
     bool escapeChar = false;
     while((nextByte = fgetc(this->sourceFile)) != '\0') {
+        //TODO: More escape characters
         //Only allowed escaped char (just now) is \n (and \\).
         //Read this char, and if its a \, read the next char to decide what to do.
         //If the next char is not an n, count the \ as a separate character.

@@ -74,4 +74,9 @@ struct Component {
 Component_PNTR component_newComponent(char *sourceFile, IteratedList_PNTR params);
 void* component_run(void* this);
 
+//Implementation-specific methods:
+void Component_waitForExit(Component_PNTR waitComponent);
+void Component_exit(void* __retval);
+void Component_create(Component_PNTR newComponent);
+
 #endif //CVM_COMPONENT_H
