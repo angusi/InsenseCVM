@@ -23,6 +23,7 @@
  * THE SOFTWARE.
  */
 
+#include <stdint.h>
 #include "TypedObject.h"
 #include "BytecodeTable.h"
 #include "Collections/ListMap.h"
@@ -73,15 +74,15 @@ bool TypedObject_isNumber(TypedObject_PNTR this) {
 size_t TypedObject_getSize(unsigned int type) {
     switch(type) {
         case BYTECODE_TYPE_INTEGER:
-            return sizeof(int);
+            return sizeof(int32_t);
         case BYTECODE_TYPE_UNSIGNED_INTEGER:
-            return sizeof(unsigned int);
+            return sizeof(uint32_t);
         case BYTECODE_TYPE_REAL:
-            return sizeof(double);
+            return sizeof(uint64_t);
         case BYTECODE_TYPE_BOOL:
-            return sizeof(bool);
+            return sizeof(uint8_t);
         case BYTECODE_TYPE_BYTE:
-            return sizeof(char);
+            return sizeof(uint8_t);
         case BYTECODE_TYPE_STRUCT:
             return sizeof(ListMap_s);
         case BYTECODE_TYPE_ANY:

@@ -1331,15 +1331,20 @@ TypedObject_PNTR component_readData(Component_PNTR this) {
     int type = fgetc(this->sourceFile);
     switch(type) {
         case BYTECODE_TYPE_INTEGER:
-            return TypedObject_construct(BYTECODE_TYPE_INTEGER, component_readNBytes(this, 4));
+            return TypedObject_construct(BYTECODE_TYPE_INTEGER,
+                                         component_readNBytes(this, TypedObject_getSize(BYTECODE_TYPE_INTEGER)));
         case BYTECODE_TYPE_UNSIGNED_INTEGER:
-            return TypedObject_construct(BYTECODE_TYPE_UNSIGNED_INTEGER, component_readNBytes(this, 4));
+            return TypedObject_construct(BYTECODE_TYPE_UNSIGNED_INTEGER,
+                                         component_readNBytes(this, TypedObject_getSize(BYTECODE_TYPE_UNSIGNED_INTEGER)));
         case BYTECODE_TYPE_REAL:
-            return TypedObject_construct(BYTECODE_TYPE_REAL, component_readNBytes(this, 8));
+            return TypedObject_construct(BYTECODE_TYPE_REAL,
+                                         component_readNBytes(this, TypedObject_getSize(BYTECODE_TYPE_REAL)));
         case BYTECODE_TYPE_BOOL:
-            return TypedObject_construct(BYTECODE_TYPE_BOOL, component_readNBytes(this, 1));
+            return TypedObject_construct(BYTECODE_TYPE_BOOL,
+                                         component_readNBytes(this, TypedObject_getSize(BYTECODE_TYPE_BOOL)));
         case BYTECODE_TYPE_BYTE:
-            return TypedObject_construct(BYTECODE_TYPE_BYTE, component_readNBytes(this, 1));
+            return TypedObject_construct(BYTECODE_TYPE_BYTE,
+                                         component_readNBytes(this, TypedObject_getSize(BYTECODE_TYPE_BYTE)));
         case BYTECODE_TYPE_STRING:
             fseek(this->sourceFile, -1, SEEK_CUR); //Rewind for the TYPE byte
             return TypedObject_construct(BYTECODE_TYPE_STRING, component_readString(this));
