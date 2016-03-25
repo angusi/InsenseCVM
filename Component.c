@@ -1105,7 +1105,7 @@ void component_procReturn(Component_PNTR this) {
     long* newPos = ScopeStack_load(this->scopeStack, "_returnAddress");
 
     //Clear the scope stack for the procedure
-    //TODO: Exit any extra levels of scope entered within the block
+    ScopeStack_exitTo(this->scopeStack, "_returnAddress");
     component_exitScope(this);
 
     //Jump back to caller

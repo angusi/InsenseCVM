@@ -50,6 +50,39 @@ void ScopeStack_exitScope(ScopeStack_PNTR this) {
     }
 }
 
+void ScopeStack_exitTo(ScopeStack_PNTR this, char *name) {
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, "ScopeStack", "Exiting scopes to %s in Scope Stack %p", name, this);
+#endif
+
+    IteratedListNode_PNTR first = this->first;
+    IteratedListNode_PNTR thisLevel = first;
+
+    if(first == NULL || thisLevel == NULL) {
+        return;
+    }
+
+    void* element = ListMap_get(thisLevel->payload, name);
+    if(element != NULL) {
+        return;
+    } else {
+        int levelsToClear = 0;
+        thisLevel = thisLevel->tail;
+        while (thisLevel != first && thisLevel != NULL) {
+            element = ListMap_get(thisLevel->payload, name);
+            if (element != NULL) {
+                break;
+            } else {
+                levelsToClear++;
+                thisLevel = thisLevel->tail;
+            }
+        }
+        for(int i = 0; i < levelsToClear; i++) {
+            ScopeStack_exitScope(this);
+        }
+    }
+}
+
 int ScopeStack_size(ScopeStack_PNTR this) {
     return IteratedList_getListLength(this);
 }

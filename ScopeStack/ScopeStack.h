@@ -34,6 +34,7 @@ typedef IteratedList_PNTR ScopeStack_PNTR, ScopeLevel_PNTR;
 
 ScopeStack_PNTR ScopeStack_enterScope(ScopeStack_PNTR this);
 void ScopeStack_exitScope(ScopeStack_PNTR this);
+void ScopeStack_exitTo(ScopeStack_PNTR this, char* name);
 int ScopeStack_size(ScopeStack_PNTR this);
 
 void ScopeStack_declare(ScopeStack_PNTR this, char *name);
