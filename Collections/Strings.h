@@ -34,11 +34,26 @@
 #define ITERATED_LIST_NULL_ELEMENT "List element is null"
 #define ITERATED_LIST_INDEX_OUT_OF_BOUNDS "List index out of bounds or list is empty"
 #define ITERATED_LIST_ELEMENT_NOT_FOUND "Element not found"
+#define ITERATED_LIST_DISPLAY_PREFIX "\nList: [ "
+#define ITERATED_LIST_DISPLAY_SUFFIX "]\n"
+
+#define STACK_NAME "Stack"
+#define STACK_CONSTRUCT_FAILED "Failed to construct Stack"
+#define STACK_UNDERFLOW "Underflow: Cannot pop from empty stack"
+#define STACK_PEEK_UNDERFLOW "Underflow: Cannot peek at empty stack"
 
 #ifdef DEBUGGINGENABLED
 #define ITERATED_LIST_DECREF "decRef List"
 #define ITERATED_LIST_NODE_DECREF "decRef Node"
 #define ITERATED_LIST_FREEING_NODE "Freeing node at %p"
+
+#define LISTMAP_NAME "ListMap"
+#define LISTMAP_PUT_UNKNOWN_KEY "Tried to put data in unknown key %s"
+
+#define STACK_CONSTRUCT "Constructing Stack"
+#define STACK_PUSH "Pushing %p onto stack at %p"
+#define STACK_POP "Popping from stack at %p"
+#define STACK_PEEK "Peeking at stack at %p"
 #endif
 
 #endif //CVM_STRINGS_H

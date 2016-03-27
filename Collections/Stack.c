@@ -30,17 +30,18 @@
 #include "Stack.h"
 #include "../GC/GC_mem.h"
 #include "../Logger/Logger.h"
+#include "Strings.h"
 
 static void Stack_decRef(Stack_PNTR pntr);
 static void StackEntry_decRef(StackEntry_PNTR pntr);
 
 Stack_PNTR Stack_constructor(){
 #ifdef DEBUGGINGENABLED
-    log_logMessage(DEBUG, "Stack", "Constructing Stack");
+    log_logMessage(DEBUG, STACK_NAME, STACK_CONSTRUCT);
 #endif
     Stack_PNTR this = (Stack_PNTR) GC_alloc(sizeof(Stack_s), true);
     if(this == 0){
-        log_logMessage(ERROR, "Stack", "Failed to construct Stack");
+        log_logMessage(ERROR, STACK_NAME, STACK_CONSTRUCT_FAILED);
         return 0;
     }
     this->storage = IteratedList_constructList();
@@ -51,7 +52,7 @@ Stack_PNTR Stack_constructor(){
 
 void Stack_push(Stack_PNTR this, void* item) {
 #ifdef DEBUGGINGENABLED
-    log_logMessage(DEBUG, "Stack", "Pushing %p onto stack at %p", item, this);
+    log_logMessage(DEBUG, STACK_NAME, STACK_PUSH, item, this);
 #endif
 
     StackEntry_PNTR newEntry = GC_alloc(sizeof(StackEntry_s), true);
@@ -64,10 +65,10 @@ void Stack_push(Stack_PNTR this, void* item) {
 
 void* Stack_pop(Stack_PNTR this) {
 #ifdef DEBUGGINGENABLED
-    log_logMessage(DEBUG, "Stack", "Popping from stack at %p", this);
+    log_logMessage(DEBUG, STACK_NAME, STACK_POP, this);
 #endif
     if(this->stackTop <= 0) {
-        log_logMessage(ERROR, "Stack", "Underflow: Cannot pop from empty stack");
+        log_logMessage(ERROR, STACK_NAME, STACK_UNDERFLOW);
         return NULL;
     }
 
@@ -80,10 +81,10 @@ void* Stack_pop(Stack_PNTR this) {
 
 void* Stack_peek(Stack_PNTR this) {
 #ifdef DEBUGGINGENABLED
-    log_logMessage(DEBUG, "Stack", "Peeking at stack at %p", this);
+    log_logMessage(DEBUG, STACK_NAME, STACK_PEEK, this);
 #endif
     if(this->stackTop <= 0) {
-        log_logMessage(ERROR, "Stack", "Underflow: Cannot peek at empty stack");
+        log_logMessage(ERROR, STACK_NAME, STACK_PEEK_UNDERFLOW);
         return NULL;
     }
 

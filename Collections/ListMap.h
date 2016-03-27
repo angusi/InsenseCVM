@@ -1,5 +1,8 @@
 /*
- * Code for declaring/storing and loading variables from a scope stack.
+ * @file ListMap.h
+ * Code for declaring/storing and loading variables from a List Map.
+ *
+ * The key for each pair is a String (char*), the value is a void*, and so can contain any C pointer.
  *
  * Copyright (c) 2015, Angus Ireland
  * School of Computer Science, St. Andrews University
@@ -39,9 +42,46 @@ struct ListMapEntry {
 typedef IteratedList_PNTR  ListMap_PNTR;
 typedef IteratedList_s ListMap_s;
 
+/**
+ * Create a new list map.
+ *
+ * This method takes no parameters, and returns a pointer to a new ListMap instance.
+ */
 ListMap_PNTR ListMap_constructor();
+
+/**
+ * Declare an item in a ListMap.
+ *
+ * Items must be "declared" before they can be "put".
+ * This registers the key.
+ *
+ * @param[in,out] listMap The ListMap instance to register the key in
+ * @param[in] key The String to register as a new key in the list map
+ */
 void ListMap_declare(ListMap_PNTR listMap, char *key);
+
+/**
+ * Get an item from a ListMap
+ *
+ * This returns either a pointer to the item, or NULL if the key is not in the map (or the key exists but no value
+ * has been "put" there).
+ *
+ * @param[in] listMap The ListMap to search for the key in
+ * @param[in] key The key to search for
+ *
+ * @return A pointer to some data, or NULL
+ */
 void*ListMap_get(ListMap_PNTR listMap, char *key);
+
+/**
+ * Put an item in the ListMap at the associated key.
+ *
+ * The key must already have been "declared" in the map.
+ *
+ * @param[in,out] listMap The ListMap to store the data in
+ * @param[in] key The String to store the data with
+ * @param[in] value A pointer to the data to store in the map.
+ */
 bool ListMap_put(ListMap_PNTR listMap, char *key, void *value);
 
 #endif //CVM_LISTMAP_H

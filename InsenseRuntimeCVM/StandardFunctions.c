@@ -34,7 +34,7 @@ void StandardFunction_init() {
         standardFunctions = ListMap_constructor();
 
         //printString(string s)
-        char* name = GC_alloc(strlen("printString"+1), false);
+        char* name = GC_alloc(strlen("printString")+1, false);
         strcat(name, "printString");
         Procedure_PNTR printString_proc = Procedure_construct(name);
         char* paramName = GC_alloc(strlen("s")+1, false);
@@ -46,7 +46,7 @@ void StandardFunction_init() {
 
 
         //printInt(int i)
-        name = GC_alloc(strlen("printInt"+1), false);
+        name = GC_alloc(strlen("printInt")+1, false);
         strcat(name, "printInt");
         Procedure_PNTR printInt_proc = Procedure_construct(name);
         paramName = GC_alloc(strlen("i")+1, false);
@@ -57,7 +57,7 @@ void StandardFunction_init() {
         ListMap_put(standardFunctions, name, printInt_proc);
 
         //printReal(real r)
-        name = GC_alloc(strlen("printReal"+1), false);
+        name = GC_alloc(strlen("printReal")+1, false);
         strcat(name, "printReal");
         Procedure_PNTR printReal_proc = Procedure_construct(name);
         paramName = GC_alloc(strlen("r")+1, false);

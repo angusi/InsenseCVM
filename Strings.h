@@ -35,7 +35,7 @@ static const char PATH_SEPARATOR = '\\';
 #endif
 
 #define PROGRAM_NAME "Insense C Virtual Machine"
-#define PROGRAM_VERSION "0.0.1"
+#define PROGRAM_VERSION "0.9.0"
 #define PROGRAM_USAGE "Usage: %s <program directory> [-l (DEBUG|INFO|WARNING|ERROR|FATAL)]\n"
 
 #endif //CVM_STRINGS_H

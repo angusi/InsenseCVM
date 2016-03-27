@@ -26,7 +26,6 @@
  * THE SOFTWARE.
  */
 
-#include <math.h>
 #include <unistd.h>
 #include "Component.h"
 #include "BytecodeTable.h"
@@ -466,7 +465,8 @@ void component_declare(Component_PNTR this) {
     log_logMessage(DEBUG, this->name, "   Declaring %s", name);
 #endif
 
-    fgetc(this->sourceFile); //TODO: Check this byte matches TYPE_COMPONENT? (Why?)
+    fgetc(this->sourceFile); //We don't care about the type when declaring.
+                             // (Also, type-checking has already been done by the compiler anyway.)
     ScopeStack_declare(this->scopeStack, name);
     GC_decRef(name);
 }
@@ -1015,7 +1015,9 @@ void component_proc(Component_PNTR this) {
     int parameters = fgetc(this->sourceFile);			// NUMBER_OF_PARAMETERS
     log_logMessage(INFO, this->name, "    %d params", parameters);
     for( int i = 0; i < parameters; i++ ) {
-        //TODO: Currently we just ignore the param types
+        //We don't actually care about the type of the parameter (except in debugging).
+        // The compiler has already type-checked for us, and a TypedObject will be explicitly constructed to hold
+        // the value anyway.
 #ifdef DEBUGGINGENABLED
         log_logMessage(DEBUG, this->name, "    Type is %d", fgetc(this->sourceFile));    // TYPE_OF_PARAMETER
 #else
@@ -1146,7 +1148,7 @@ void component_struct_constructor(Component_PNTR this) {
     if(paramsToRead > 0) {
         ListMap_PNTR paramsList = TypedObject_getObject(newStruct);
         for(int i = 0; i < paramsToRead; i++) {
-            fgetc(this->sourceFile); //TODO: Ignoring type just now...
+            fgetc(this->sourceFile); //As in the component_declare method, we don't care about the type here.
             char* name = component_readString(this);
 #ifdef DEBUGGINGENABLED
             log_logMessage(DEBUG, this->name, "        Declaring struct field %s", name);
@@ -1415,7 +1417,7 @@ int component_skipToNext(Component_PNTR this, int bytecode) {
             case BYTECODE_IF:
                 GC_decRef(component_readString(this));	// BYTE_JUMP
                 break;
-            case BYTECODE_ELSE: // Not sure yet if require?
+            case BYTECODE_ELSE:
                 GC_decRef(component_readString(this));	// BYTE_JUMP
                 break;
             case BYTECODE_CONNECT:

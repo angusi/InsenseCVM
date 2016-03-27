@@ -14,10 +14,10 @@ void displayList(IteratedList_PNTR l, void (*f)(void *val)){
     }
 
     IteratedListNode_PNTR current = l->first;
-    printf("\nList: [ ");
+    printf(ITERATED_LIST_DISPLAY_PREFIX);
     while(current!=NULL){
         (*f)(current->payload);
         current = current->tail;
     }
-    printf("]\n");
+    printf(ITERATED_LIST_DISPLAY_SUFFIX);
 }

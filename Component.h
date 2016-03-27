@@ -51,7 +51,6 @@ struct Component {
     void (*decRef)(Component_PNTR component); //!< A pointer to the garbage collection function. Automatically set by constructor.
     char* name;                               //!< Pointer to a char* with the Component's friendly name.
     FILE* sourceFile;                         //!< Pointer to a file object with this component's bytecode source.
-    pthread_t threadId;                       //!< On Unix, the thread ID that this component is running in.
     IteratedList_PNTR parameters;             //!< A list of parameters passed into this component.
     ScopeStack_PNTR scopeStack;               //!< The scope stack, where local variables are stored.
     Stack_PNTR dataStack;                     //!< The data stack, where date being operated on is stored.
@@ -61,6 +60,7 @@ struct Component {
     bool stop;                                //!< If true, Component will terminate on next instruction.
     bool running;                             //!< Certain operations require the component to be fully initialised. True on this flag indicates this status.
     bool inProject;                           //!< Project blocks need skipping out of at the end, so this marks if a project block is being executed.
+    pthread_t threadId;                       //!< On Unix, the thread ID that this component is running in.
 };
 
 /**

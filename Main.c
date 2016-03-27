@@ -47,7 +47,11 @@ int main(int argc, char* argv[]) {
     GC_init();
     StandardFunction_init();
     
-
+    //Can have exactly 2 or 4 args:
+    // 0: executable name
+    // 1: Insense Bytecode directory
+    // 2: -l flag
+    // 3: -l value
     if(argc < 2 || argc == 3 || argc > 4) {
         printf(PROGRAM_USAGE, argv[0]);
         return EXITCODE_INVALID_ARGUMENTS;

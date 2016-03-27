@@ -1,5 +1,8 @@
 /*
- * Code for declaring/storing and loading variables from a scope stack.
+ * @file ListMap.c
+ * Code for declaring/storing and loading variables from a List Map.
+ *
+ * The key for each pair is a String (char*), the value is a void*, and so can contain any C pointer.
  *
  * Copyright (c) 2015, Angus Ireland
  * School of Computer Science, St. Andrews University
@@ -27,7 +30,7 @@
 #include <stddef.h>
 #include "ListMap.h"
 #include "../GC/GC_mem.h"
-#include "../Logger/Logger.h"
+#include "Strings.h"
 
 void ListMapEntry_decRef(ListMapEntry_PNTR pntr);
 
@@ -47,7 +50,6 @@ void ListMap_declare(ListMap_PNTR listMap, char *key) {
         newEntry->decRef = ListMapEntry_decRef;
 
         IteratedList_insertElement(listMap, newEntry);
-        //GC_decRef(newEntry);
     }
 }
 
@@ -69,7 +71,7 @@ bool ListMap_put(ListMap_PNTR listMap, char *key, void *value) {
 
     if(varElement == NULL) {
 #ifdef DEBUGGINGENABLED
-        log_logMessage(INFO, "ListMap", "Tried to put data in unknown key %s (this may not be an error)", key);
+        log_logMessage(INFO, LISTMAP_NAME, LISTMAP_PUT_UNKNOWN_KEY, key);
 #endif
         return false;
     }
