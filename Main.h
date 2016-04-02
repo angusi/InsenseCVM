@@ -33,11 +33,13 @@
 #ifndef CVM_MAIN_H
 #define CVM_MAIN_H
 
-#include <stdio.h>
 #include <string.h>
 #include <pthread.h>
+#include "Component.h"
 
 int main(int argc, char* argv[]);
 char* getFilePath(char* fileName);
+
+Component_PNTR mainComponent;
 
 #endif //CVM_MAIN_H

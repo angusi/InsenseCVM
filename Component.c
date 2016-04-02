@@ -27,6 +27,8 @@
  */
 
 #include <unistd.h>
+#include <stdio.h>
+#include <errno.h>
 #include "Component.h"
 #include "BytecodeTable.h"
 #include "Main.h"
@@ -41,6 +43,7 @@ void component_exitScope(Component_PNTR this);
 TypedObject_PNTR component_readData(Component_PNTR this);
 char* component_readString(Component_PNTR this);
 void* component_readNBytes(Component_PNTR this, size_t nBytes);
+char* Component_getSourceFile(char* name);
 Component_PNTR component_call(Component_PNTR this);
 void component_constructor(Component_PNTR this);
 void component_declare(Component_PNTR this);
@@ -77,13 +80,13 @@ void component_projectExit(Component_PNTR this);
  * @param[in] params Iterated List of parameters
  * @return Pointer to new component object
  */
-Component_PNTR component_newComponent(char *sourceFile, IteratedList_PNTR params) {
+Component_PNTR component_newComponent(char* name, char *sourceFile, IteratedList_PNTR params) {
     Component_PNTR this = GC_alloc(sizeof(Component_s), true);
     this->decRef = Component_decRef;
 
-    size_t componentNameSize = strrchr(basename(sourceFile), '.')-basename(sourceFile);
+    size_t componentNameSize = strlen(name);
     this->name = GC_alloc(componentNameSize+1, false);
-    strncpy(this->name, basename(sourceFile), componentNameSize);
+    strcat(this->name, name);
 
     this->sourceFile = fopen(sourceFile, "rb");
     if(this->sourceFile == NULL) {
@@ -269,8 +272,8 @@ void component_component(Component_PNTR this) {
 #endif
 
     char* name = component_readString(this);
-    if(!strcmp(name, this->name)) { //Negated strcmp because 0 is match
-        log_logMessage(FATAL, this->name, "Syntax error in COMPONENT - name %d does not match expected %d", name, this->name);
+    if(strcmp(name, this->name) != 0) { //Negated strcmp because 0 is match
+        log_logMessage(FATAL, this->name, "Syntax error in COMPONENT - name %s does not match expected %s", name, this->name);
         component_cleanUpAndStop(this, NULL);
     }
 
@@ -342,14 +345,9 @@ Component_PNTR component_call(Component_PNTR this) {
         }
     }
 
-    size_t sourceFileNameLength = 8 + strlen(name) + 4 + 1; //"Insense_" + name + ".isc" + '\0'
-    char* sourceFile = GC_alloc(sourceFileNameLength, false);
-    strcat(sourceFile, "Insense_");
-    strcat(sourceFile, name);
-    strcat(sourceFile, ".isc");
-    sourceFile[sourceFileNameLength-1] = '\0';
+    char* sourceFile = Component_getSourceFile(name);
     char* filePath = getFilePath(sourceFile);
-    Component_PNTR newComponent = component_newComponent(filePath, paramsList);
+    Component_PNTR newComponent = component_newComponent(name, filePath, paramsList);
     Component_create(newComponent);
 
     log_logMessage(INFO, this->name, "    Component %s is at address %p", name, newComponent);
@@ -1013,7 +1011,7 @@ void component_proc(Component_PNTR this) {
     Procedure_PNTR newProcedure = Procedure_construct(procName);
 
     int parameters = fgetc(this->sourceFile);			// NUMBER_OF_PARAMETERS
-    log_logMessage(INFO, this->name, "    %d params", parameters);
+    log_logMessage(DEBUG, this->name, "    %d params", parameters);
     for( int i = 0; i < parameters; i++ ) {
         //We don't actually care about the type of the parameter (except in debugging).
         // The compiler has already type-checked for us, and a TypedObject will be explicitly constructed to hold
@@ -1034,7 +1032,7 @@ void component_proc(Component_PNTR this) {
     ListMap_put(this->procs, procName, newProcedure);
 
     component_skipToNext(this, BYTECODE_BLOCKEND);
-    fgetc(this->sourceFile); //Consume the BLOCKEND
+    //fgetc(this->sourceFile); //Consume the BLOCKEND
 }
 
 void component_procCall(Component_PNTR this) {
@@ -1051,6 +1049,7 @@ void component_procCall(Component_PNTR this) {
     if(this->procs != NULL) {
         proc = ListMap_get(this->procs, procName);
     }
+
     if(proc != NULL) {
         //Program-defined proc
 
@@ -1059,6 +1058,7 @@ void component_procCall(Component_PNTR this) {
 
         long* fPos = GC_alloc(sizeof(long), false);
         *fPos = ftell(this->sourceFile);
+
         ScopeStack_declare(this->scopeStack, "_returnAddress");
         ScopeStack_store(this->scopeStack, "_returnAddress", fPos);
 
@@ -1075,25 +1075,63 @@ void component_procCall(Component_PNTR this) {
 #endif
         fseek(this->sourceFile, Procedure_getPosition(proc), SEEK_SET);
     } else {
-        proc = ListMap_get(standardFunctions, procName);
-        if(proc == NULL) {
-            log_logMessage(FATAL, this->name, "Procedure %s not found in Component %s or standard functions in %p!"
-                    " Terminating.", procName, this->name, standardFunctions);
-            component_cleanUpAndStop(this, NULL);
+        if (mainComponent->procs != NULL) {
+            //Not in this component, try global
+            proc = ListMap_get(mainComponent->procs, procName);
         }
+        if (proc != NULL) {
+            //In global! Go There.
 
-        //Globally defined decl
+            //Enter a new scope level, and put the return address (i.e. the current next byte index) in
+            component_enterScope(this);
 
-        IteratedList_PNTR paramNames = Procedure_getParameters(proc);
-        unsigned int numParams = IteratedList_getListLength(paramNames);
-        void** params = GC_alloc(sizeof(void*)*numParams, false);
-        for(unsigned int i = 0; i < numParams; i++) {
-            //TODO: Check GC Ref counts of pop/store/getElement values
-            params[i] = TypedObject_getObject(Stack_pop(this->dataStack));
+            long *fPos = GC_alloc(sizeof(long), false);
+            *fPos = ftell(this->sourceFile);
+
+            char* fPath = getFilePath(Component_getSourceFile(this->name));
+            FILE** fLoc = GC_alloc(sizeof(FILE*), false);
+            *fLoc = fopen(fPath, "rb");
+
+            ScopeStack_declare(this->scopeStack, "_returnAddress");
+            ScopeStack_store(this->scopeStack, "_returnAddress", fPos);
+            ScopeStack_declare(this->scopeStack, "_returnSource");
+            ScopeStack_store(this->scopeStack, "_returnSource", fLoc);
+
+            //Then add all the parameters into the scope
+            IteratedList_PNTR paramNames = Procedure_getParameters(proc);
+            for (unsigned int i = 0; i < IteratedList_getListLength(paramNames); i++) {
+                //TODO: Check GC Ref counts of pop/store/getElement values
+                char *name = IteratedList_getElementN(paramNames, i);
+                ScopeStack_declare(this->scopeStack, name);
+                ScopeStack_store(this->scopeStack, name, Stack_pop(this->dataStack));
+            }
+#ifdef DEBUGGINGENABLED
+            log_logMessage(DEBUG, this->name, "     Seeking to byte %ld", Procedure_getPosition(proc));
+#endif
+            this->sourceFile = mainComponent->sourceFile;
+            fseek(this->sourceFile, Procedure_getPosition(proc), SEEK_SET);
+        } else {
+            //Not in this component or global, try std fns
+            proc = ListMap_get(standardFunctions, procName);
+            if (proc == NULL) {
+                log_logMessage(FATAL, this->name, "Procedure %s not found in Component %s or standard functions in %p!"
+                        " Terminating.", procName, this->name, standardFunctions);
+                component_cleanUpAndStop(this, NULL);
+            }
+
+            //Globally defined decl
+
+            IteratedList_PNTR paramNames = Procedure_getParameters(proc);
+            unsigned int numParams = IteratedList_getListLength(paramNames);
+            void **params = GC_alloc(sizeof(void *) * numParams, false);
+            for (unsigned int i = 0; i < numParams; i++) {
+                //TODO: Check GC Ref counts of pop/store/getElement values
+                params[i] = TypedObject_getObject(Stack_pop(this->dataStack));
+            }
+
+            StandardFunction function = (StandardFunction) Procedure_getPosition(proc);
+            function(numParams, params);
         }
-
-        StandardFunction function = (StandardFunction) Procedure_getPosition(proc);
-        function(numParams, params);
     }
     GC_decRef(procName);
 }
@@ -1103,18 +1141,27 @@ void component_procReturn(Component_PNTR this) {
     log_logMessage(DEBUG, this->name, "RETURN");
 #endif
 
-    //Get the return address from the scopestack
+    //Get the return address and file (if set) from the scopestack
     long* newPos = ScopeStack_load(this->scopeStack, "_returnAddress");
-
-    //Clear the scope stack for the procedure
-    ScopeStack_exitTo(this->scopeStack, "_returnAddress");
-    component_exitScope(this);
+    FILE** newFile = ScopeStack_load(this->scopeStack, "_returnSource");
 
     //Jump back to caller
+    if(newFile != NULL) {
+#ifdef DEBUGGINGENABLED
+        log_logMessage(DEBUG, this->name, "    Jumping back to file at %p", newFile);
+#endif
+        this->sourceFile = *newFile;
+    }
 #ifdef DEBUGGINGENABLED
     log_logMessage(DEBUG, this->name, "    Seeking to byte %ld", *newPos);
 #endif
     fseek(this->sourceFile, *newPos, SEEK_SET);
+
+    GC_decRef(newPos);
+
+    //Clear the scope stack for the procedure
+    ScopeStack_exitTo(this->scopeStack, "_returnAddress");
+    component_exitScope(this);
 }
 
 void component_struct(Component_PNTR this) {
@@ -1488,6 +1535,17 @@ int component_skipToNext(Component_PNTR this, int bytecode) {
         next = fgetc(this->sourceFile);
     }
     return next;
+}
+
+char* Component_getSourceFile(char* name) {
+    size_t sourceFileNameLength = 8 + strlen(name) + 4 + 1; //"Insense_" + name + ".isc" + '\0'
+    char* sourceFile = GC_alloc(sourceFileNameLength, false);
+    strcat(sourceFile, "Insense_");
+    strcat(sourceFile, name);
+    strcat(sourceFile, ".isc");
+    sourceFile[sourceFileNameLength-1] = '\0';
+
+    return sourceFile;
 }
 
 // decRef function is called when ref count to a Stack object is zero

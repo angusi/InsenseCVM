@@ -28,9 +28,9 @@
 #ifndef CVM_COMPONENT_H
 #define CVM_COMPONENT_H
 
+#include <stdio.h>
 #include <libgen.h>
 #include <string.h>
-#include <stdio.h>
 #include "GC/GC_mem.h"
 #include "InsenseRuntimeCVM/StandardFunctions.h"
 #include "Logger/Logger.h"
@@ -71,7 +71,7 @@ struct Component {
  * 
  * @return A newly created Component_PNTR. This object will require Garbage Collection.
  */
-Component_PNTR component_newComponent(char *sourceFile, IteratedList_PNTR params);
+Component_PNTR component_newComponent(char* name, char *sourceFile, IteratedList_PNTR params);
 void* component_run(void* this);
 
 //Implementation-specific methods:

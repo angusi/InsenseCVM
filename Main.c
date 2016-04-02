@@ -30,11 +30,10 @@
  */
 
 #include "Main.h"
-
-#include "Component.h"
 #include "Strings.h"
 
 char* directory;
+Component_PNTR mainComponent;
 
 /**
  * Main program entry point.
@@ -65,7 +64,7 @@ int main(int argc, char* argv[]) {
     strncpy(directory, argv[1], strlen(argv[1]));
 
     char* mainFile = getFilePath("Main.isc");
-    Component_PNTR mainComponent = component_newComponent(mainFile, NULL);
+    mainComponent = component_newComponent("Main", mainFile, NULL);
 
     pthread_t mainThread;
     pthread_create(&mainThread, NULL, component_run, mainComponent);

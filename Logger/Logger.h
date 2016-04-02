@@ -28,7 +28,6 @@
 #ifndef CVM_LOGGER_H
 #define CVM_LOGGER_H
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "../ExitCodes.h"
