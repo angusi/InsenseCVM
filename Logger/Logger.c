@@ -38,7 +38,7 @@ void log_init() {
     if(logMutex == NULL) {
         logMutex = malloc(sizeof(pthread_mutex_t));
         pthread_mutex_init(logMutex, NULL);
-        printf("Logging subsystem initialised\n");
+        log_logMessage(INFO, "Logger", "Logging subsystem initialised");
     }
 }
 
@@ -70,6 +70,9 @@ void log_vf_logMessage(log_Level_t level, const char* source, const char* messag
 }
 
 void log_logMessage(log_Level_t level, const char *source, const char *message, ...) {
+    if(logMutex == NULL) {
+        printf("LOGGER USED, BUT NOT INITIALISED.\n");
+    }
     va_list argp;
     va_start(argp, message);
     log_vf_logMessage(level, source, message, argp);

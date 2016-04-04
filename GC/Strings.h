@@ -29,6 +29,7 @@
 #define GC_STRINGS_H
 
 #define GARBAGE_COLLECTOR_NAME "Garbage Collector"
+#define GARBAGE_COLLECTOR_INITIALISED "GC Subsystem Initialised"
 #define GARBAGE_COLLECTOR_OOM "Could not allocate memory (possibly OOM?)"
 #define GARBAGE_COLLECTOR_DECREF_NULL "Ignoring call to decrement NULL pointer references"
 

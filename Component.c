@@ -28,7 +28,6 @@
 
 #include <unistd.h>
 #include <stdio.h>
-#include <errno.h>
 #include "Component.h"
 #include "BytecodeTable.h"
 #include "Main.h"
@@ -231,14 +230,20 @@ void component_cleanUpAndStop(Component_PNTR this, void* __retval) {
     log_logMessage(INFO, this->name, "Cleaning up Component and returning to caller.");
 
     if(this->waitComponents != NULL) {
-        log_logMessage(INFO, this->name, "Waiting on started components.");
+#ifdef DEBUGGINGENABLED
+        log_logMessage(DEBUG, this->name, "Waiting on started components.");
+#endif
         while(Stack_size(this->waitComponents) != 0) {
             Component_PNTR waitOn = TypedObject_getObject((TypedObject_PNTR)Stack_pop(this->waitComponents));
-            log_logMessage(INFO, this->name, "  Waiting on %s (%lu)", waitOn->name, waitOn->threadId);
+#ifdef DEBUGGINGENABLED
+            log_logMessage(DEBUG, this->name, "  Waiting on %s (%lu)", waitOn->name, waitOn->threadId);
+#endif
             Component_waitForExit(waitOn);
             GC_decRef(waitOn);
         }
-        log_logMessage(INFO, this->name, "All started components stopped.");
+#ifdef DEBUGGINGENABLED
+        log_logMessage(DEBUG, this->name, "All started components stopped.");
+#endif
     }
 
     //Copy name so we can use it in the done message, after Component has been trashed.
@@ -350,7 +355,9 @@ Component_PNTR component_call(Component_PNTR this) {
     Component_PNTR newComponent = component_newComponent(name, filePath, paramsList);
     Component_create(newComponent);
 
-    log_logMessage(INFO, this->name, "    Component %s is at address %p", name, newComponent);
+#ifdef DEBUGGINGENABLED
+    log_logMessage(DEBUG, this->name, "    Component %s is at address %p", name, newComponent);
+#endif
 
     TypedObject_PNTR newObject = TypedObject_construct(BYTECODE_TYPE_COMPONENT, newComponent);
     Stack_push(this->dataStack, newObject);

@@ -68,6 +68,6 @@ void StandardFunction_init() {
         ListMap_put(standardFunctions, name, printReal_proc);
 
 
-        printf("Standard Functions initialised at %p\n", (void*)standardFunctions);
+        log_logMessage(INFO, "Standard Functions", "Standard Functions initialised at %p", (void*)standardFunctions);
     }
 }

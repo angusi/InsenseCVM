@@ -28,7 +28,6 @@
 #include "../GC/GC_mem.h"                          // For memory cleanup
 #include "ANSI-Colours.h"                          // For test results
 #include "../Logger/Logger.h"                      // Init log for stack/GC's logging
-#include "../BytecodeTable.h"
 
 bool testConstructor();
 bool testDeclareStoreLoad();
@@ -226,7 +225,7 @@ bool testMultipleScopes() {
     if(result) {
         printf(ANSI_COLOR_GREEN "Test passed - SCOPE STACK MULTI-LEVEL" ANSI_COLOR_RESET "\n");
     } else {
-        printf(ANSI_COLOR_RED "Test failed - SCOPE STACK MULTI_LEVE" ANSI_COLOR_RESET "\n");
+        printf(ANSI_COLOR_RED "Test failed - SCOPE STACK MULTI_LEVEL" ANSI_COLOR_RESET "\n");
     }
 
     ScopeStack_exitScope(scopeStack);

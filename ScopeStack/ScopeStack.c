@@ -66,7 +66,7 @@ void ScopeStack_exitTo(ScopeStack_PNTR this, char *name) {
     if(element != NULL) {
         return;
     } else {
-        int levelsToClear = 0;
+        unsigned int levelsToClear = 0;
         thisLevel = thisLevel->tail;
         while (thisLevel != first && thisLevel != NULL) {
             element = ListMap_get(thisLevel->payload, name);
@@ -77,7 +77,7 @@ void ScopeStack_exitTo(ScopeStack_PNTR this, char *name) {
                 thisLevel = thisLevel->tail;
             }
         }
-        for(int i = 0; i < levelsToClear; i++) {
+        for(unsigned int i = 0; i < levelsToClear; i++) {
             ScopeStack_exitScope(this);
         }
     }

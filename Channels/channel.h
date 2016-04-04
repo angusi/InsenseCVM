@@ -2,10 +2,10 @@
  *
  * Start of channel implementation for UNIX
  *
- * Send, receive, bind, unbind atre implemented according to SPIN paper algorithms
+ * Send, receive, bind, unbind are implemented according to SPIN paper algorithms
  * Select operation is missing
  *
- * Absolutely no guarantees with this code, nevcer been tested by me
+ * Absolutely no guarantees with this code, never been tested by me
  *
  * @author jonl, based on code from Andrew Bell
  *
@@ -88,7 +88,7 @@ struct select_struct
 //   DuplicateLCNException,                      // two channels published with the same LCN on a single node
 //   NodesUnreachableException,                  // there is no route to the remote node
 //   ChannelsUnknownException,                   // the specified remote channel has not been published on the remote node
-//   IncompatibleChannelsException,              // two channels are incomaptible for binding to take place
+//   IncompatibleChannelsException,              // two channels are incompatible for binding to take place
 //   BindStatusUnknownException                  // status of binding two inter-node channels together is unknown, no ACK received
 // } inceos_exception_t;
 

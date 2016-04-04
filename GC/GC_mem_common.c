@@ -49,7 +49,7 @@ void GC_init() {
     if(GC_mutex == NULL) {
         GC_mutex = malloc(sizeof(pthread_mutex_t));
         pthread_mutex_init(GC_mutex, NULL);
-        printf("GC subsystem initialised\n");
+        log_logMessage(INFO, GARBAGE_COLLECTOR_NAME, GARBAGE_COLLECTOR_INITIALISED);
     }
 }
 

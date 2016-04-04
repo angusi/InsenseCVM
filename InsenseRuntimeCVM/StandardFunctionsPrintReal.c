@@ -8,6 +8,7 @@
  */
 
 #include <math.h>
+#include <stdio.h>
 #include "StandardFunctions.h"
 #include "../Logger/Logger.h"
 

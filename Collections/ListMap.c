@@ -30,8 +30,6 @@
 #include <stddef.h>
 #include "ListMap.h"
 #include "../GC/GC_mem.h"
-#include "Strings.h"
-#include "../Logger/Logger.h"
 
 void ListMapEntry_decRef(ListMapEntry_PNTR pntr);
 

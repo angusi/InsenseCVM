@@ -5,7 +5,7 @@
  * Send, receive, bind, unbind are implemented according to SPIN paper algorithms
  * Select operation is missing
  *
- * Absolutely no guarantees with this code, nevcer been tested by me
+ * Absolutely no guarantees with this code, never been tested by me
  *
  * @author jonl, based on code from Andrew Bell
  *
