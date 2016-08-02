@@ -1,0 +1,29 @@
+type IIfTest is interface ()
+
+component IfTest presents IIfTest {
+
+	count = 10
+	state = "start"
+
+	constructor() {	
+	}
+		
+	behaviour {
+
+		if count == 0 then stop
+		else if count % 2 == 0 then {
+		    state := "even"
+		    printString(state)
+		    printString("\n")
+		}
+		else {
+		    state := "odd"
+		    printString(state)
+		    printString("\n")
+		}
+
+		count := count - 1
+	}
+}
+
+test = new IfTest()

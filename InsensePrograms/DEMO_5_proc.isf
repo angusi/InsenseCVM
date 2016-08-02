@@ -1,0 +1,41 @@
+type IProcTest is interface()
+
+proc DoubleReal(real value) : real {
+        value := value * 2.0
+        return value;
+}
+
+component ProcTest presents IProcTest {
+
+    proc DoubleInt(integer value) : integer {
+        value := value * 2
+        return value;
+    }
+
+    constructor() { }
+
+    behaviour {
+        printString("Hello World\n")
+
+        beforeInt = 2
+        printString("Int: ")
+        printInt(beforeInt)
+        printString("\n")
+        notbeforeInt = DoubleInt(beforeInt)
+        printString("Int: ")
+        printInt(notbeforeInt)
+        printString("\n")
+
+        beforeReal = 2.2
+        printString("Real: ")
+        printReal(beforeReal)
+        printString("\n")
+        notbeforeReal = DoubleReal(beforeReal)
+        printString("Real: ")
+        printReal(notbeforeReal)
+        printString("\n")
+        stop
+    }
+}
+
+test = new ProcTest()

@@ -1,0 +1,40 @@
+type ISender is interface( out integer output )
+type IReceiver is interface ( in integer input )
+
+component Sender presents ISender {
+
+	number = 0
+
+	constructor(){
+	}
+
+	behaviour {
+	    printString("Sending ")
+        printInt(number)
+        printString("\n")
+		send number on output
+		if number == 5 then stop
+		number := number + 1
+	}
+}
+
+component Receiver presents IReceiver {
+
+	number = 0
+
+	constructor() {
+	}
+
+	behaviour {
+		receive count from input
+		number := count
+		printString("Received ")
+		printInt(number)
+		printString("\n")
+		if number == 5 then stop
+	}
+}
+
+s = new Sender()
+r = new Receiver()
+connect s.output to r.input

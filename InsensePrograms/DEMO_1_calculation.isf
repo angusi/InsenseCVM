@@ -1,0 +1,46 @@
+type ICalculationTest is interface ()
+
+component CalculationTest presents ICalculationTest {
+
+    number = 0
+
+    constructor() {    
+        number := 1
+    }
+        
+    behaviour {
+        printInt(number)
+        printString("\n")
+
+        number = 2
+        printInt(number)
+        printString("\n")
+        
+        number := 3
+        printInt(number)
+        printString("\n")
+        
+        number := 55 + 44 - 33 * 22 / 11 % 13
+        printInt(number)
+        printString("\n")
+        
+        number := 13 * ( 3 + 10 )
+        printInt(number)
+        printString("\n")
+        
+        testBool = !true
+        copyBool = !testBool and !(2 > 3) or (number <= 5)
+
+        testReal = 3.2 / 3.5 * 29.3 - 23.4 + 1.2
+        printReal(testReal)
+        printString("\n")
+        
+        testString = "Hello World!!!"
+        printString(testString)
+        printString("\n")
+        
+        stop
+    }
+}
+
+test = new CalculationTest()
